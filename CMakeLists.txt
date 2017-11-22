@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.6.2)
 project(CPPServer)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -8,4 +8,4 @@ set(SOURCE_FILES main.cpp
         server.h)
 add_executable(CPPServer ${SOURCE_FILES})
 
-target_compile_options(CPPServer PRIVATE -Wall -Wextra)
+target_compile_options(CPPServer PRIVATE -Wall -Wextra -ansi -pedantic -Wno-missing-field-initializers)

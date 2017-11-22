@@ -6,15 +6,14 @@ using namespace std;
 
 static void run() {
     SOCKET sock = init_connection();
-    //char buffer[BUF_SIZE];
     string buffer;
     int actual = 0;                 // Array index
     int max = sock;
     Client clients[MAX_CLIENTS];    // An array for all clients
 
-    fd_set rdfs;
+    fd_set rdfs{};
 
-    while (1) {
+    while (true) {
         int i = 0;
 
         // SELECT Params
@@ -24,11 +23,10 @@ static void run() {
         for (i = 0; i < actual; i++)
             FD_SET(clients[i].sock, &rdfs); // Adding each client's socket
 
-        if (select(max + 1, &rdfs, NULL, NULL, NULL) == -1) {
+        if (select(max + 1, &rdfs, nullptr, nullptr, nullptr) == -1) {
             perror("select()");
             exit(errno);
         }
-
 
         if (FD_ISSET(STDIN_FILENO, &rdfs))  // If something happens on standard input
             break; // Stop process when typing on keyboard
@@ -41,55 +39,50 @@ static void run() {
                 continue;
             }
 
-            if (read_client(csock, buffer) == -1)   // After connecting, the client sends its name
+            if ((buffer = read_client(csock)) == "")   // After connecting, the client sends its name
                 continue; // Disconnects
 
             max = csock > max ? csock : max;    // returns the new max fd
 
             FD_SET(csock, &rdfs);
 
-            Client c/* = {csock}*/;
+            Client c;
             c.sock = csock;
             c.name = buffer;
-            //strncpy(c.name, buffer, BUF_SIZE - 1);
             clients[actual] = c;
             actual++;
         } else {
-            int i = 0;
-            for (i = 0; i < actual; i++) {
-                if (FD_ISSET(clients[i].sock, &rdfs)) { // A client is talking
-                    Client client = clients[i];
-                    int c = read_client(clients[i].sock, buffer);
-                    if (c == 0) {                       // A client disconnected
-                        closesocket(clients[i].sock);
-                        remove_client(clients, i, &actual);
-                        //strncpy(buffer, client.name, BUF_SIZE - 1);
+            int k = 0;
+            for (k = 0; k < actual; k++) {
+                if (FD_ISSET(clients[k].sock, &rdfs)) { // A client is talking
+                    Client client = clients[k];
+                    buffer = read_client(clients[k].sock);
+                    if (buffer.empty()) {                       // A client disconnected
+                        closesocket(clients[k].sock);
+                        remove_client(clients, k, &actual);
                         buffer = client.name;
-                        //strncat(buffer, " disconnected !", BUF_SIZE - strlen(buffer) - 1);
                         buffer += " disconnected !";
                         send_message_to_all_clients(clients, client, actual, buffer, 1);
-                    } else if (/*str_equals(buffer, "send")*/buffer == "send") {
-                        send_message_to_client(clients, clients[i], clients[i], actual, "Destination ? ", 1);
-                        int c2 = read_client(clients[i].sock, buffer);
-                        if (c2) {
-                            Client dest;
+                    } else if (buffer == "send") {
+                        send_message_to_client(clients, clients[k], clients[k], actual, "Destination ? ", 1);
+                        buffer = read_client(clients[k].sock);
+                        if (buffer.length()) {
+                            Client dest = {0};
                             int j;
                             for (j = 0; j < actual; j++) {
-                                if (/*str_equals(clients[j].name, buffer)*/clients[j].name == buffer) {
+                                if (clients[j].name == buffer) {
                                     dest = clients[j];
                                     break;
-                                } else {
-                                    //strncpy(dest.name, "NULL", BUF_SIZE - 1);
+                                } else
                                     dest.name = "NULL";
-                                }
                             }
-                            if (/* !str_equals(dest.name, "NULL")*/dest.name != "NULL") {
-                                send_message_to_client(clients, clients[i], clients[i], actual, "Message ? ", 1);
-                                int c3 = read_client(clients[i].sock, buffer);
-                                if (c3)
-                                    send_message_to_client(clients, clients[i], dest, actual, buffer, 0);
+                            if (dest.name != "NULL") {
+                                send_message_to_client(clients, clients[k], clients[k], actual, "Message ? ", 1);
+                                buffer = read_client(clients[k].sock);
+                                if (buffer.length())
+                                    send_message_to_client(clients, clients[k], dest, actual, buffer, 0);
                             } else
-                                send_message_to_client(clients, clients[i], clients[i], actual,
+                                send_message_to_client(clients, clients[k], clients[k], actual,
                                                        "No client found with this pseudo.", 1);
                         }
                     } else
@@ -106,9 +99,8 @@ static void run() {
 
 static void clear_clients(Client *clients, int actual) {
     int i = 0;
-    for (i = 0; i < actual; i++) {
+    for (i = 0; i < actual; i++)
         closesocket(clients[i].sock);
-    }
 }
 
 static void remove_client(Client *clients, int to_remove, int *actual) {
@@ -120,42 +112,29 @@ static void remove_client(Client *clients, int to_remove, int *actual) {
 static void
 send_message_to_all_clients(Client *clients, Client sender, int actual, const string buffer, char from_server) {
     int i = 0;
-    //char message[BUF_SIZE];
     string message;
     message[0] = 0;
-    for (i = 0; i < actual; i++) {
+    for (i = 0; i < actual; i++)
         if (sender.sock != clients[i].sock) {
-            if (from_server == 0) {
-                //strncpy(message, sender.name.c_str(), BUF_SIZE - 1);
-                message = sender.name;
-                message += " : ";
-                //strncat(message, " : ", sizeof message - strlen(message) - 1);
-            }
-            //strncat(message, buffer, sizeof message - strlen(message) - 1);
+            if (from_server == 0)
+                message = sender.name + " : ";
             message += buffer;
             write_client(clients[i].sock, message);
         }
-    }
 }
 
 static void
 send_message_to_client(Client clients[MAX_CLIENTS], Client sender, Client receiver, int actual, const string buffer,
                        char from_server) {
     int i = 0;
-    //char message[BUF_SIZE] = {0};
     string message;
     for (i = 0; i < actual; i++) {
-        if (/*str_equals(receiver.name, clients[i].name)*/receiver.name == clients[i].name) {
+        if (receiver.name == clients[i].name) {
             if (!from_server) {
-                /*strncpy(message, "[", sizeof message - strlen(message) - 1);
-                strncat(message, sender.name, BUF_SIZE - 1);
-                strncat(message, "] ", sizeof message - strlen(message) - 1);*/
                 message = "[" + sender.name + "]";
             } else {
-                //strncpy(message, "[SERVER] ", sizeof message - strlen(message) - 1);
                 message = "[SERVER]";
             }
-            //strncat(message, buffer, sizeof message - strlen(message) - 1);
             message += buffer;
             write_client(clients[i].sock, message);
         }
@@ -163,7 +142,7 @@ send_message_to_client(Client clients[MAX_CLIENTS], Client sender, Client receiv
 
 }
 
-static int init_connection(void) {
+static int init_connection() {
     SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);  // Initializing the socket : AF_INET = IPv4, SOCK_STREAM : TCP
     SOCKADDR_IN sin = {0};
 
@@ -189,31 +168,28 @@ static int init_connection(void) {
     return sock;
 }
 
-static int str_equals(char *str1, char *str2) {
-    if (!strcmp(str1, str2))
-        return 1;
-    return 0;
-}
-
 static void end_connection(int sock) {
     closesocket(sock);
 }
 
-static int read_client(SOCKET sock, string buffer) {
+static string read_client(SOCKET sock) {
     int n = 0;
     char buf[BUF_SIZE];
 
-    if ((n = recv(sock, buf, BUF_SIZE - 1, 0)) < 0) { //TODO Convert to char[]
+    if ((n = (int) recv(sock, buf, BUF_SIZE - 1, 0)) < 0) {
         perror("recv()");
-        /* if recv error we disonnect the client */
-        n = 0;
+        return "";  // If recv error we disconnect the client
     }
 
     buf[n] = 0;
 
-    buffer = buf;
+    string out = buf;
 
-    return n;
+    cout << "[DEBUG] " << out << endl;
+
+    if (out.length())
+        return out;
+    return "";
 }
 
 static void write_client(SOCKET sock, const string buffer) {
