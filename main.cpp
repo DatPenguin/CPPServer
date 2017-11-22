@@ -4,7 +4,7 @@
 
 using namespace std;
 
-static void run() {
+void run() {
     SOCKET sock = init_connection();
     string buffer;
     int actual = 0;                 // Array index
@@ -97,52 +97,19 @@ static void run() {
     end_connection(sock);
 }
 
-static void clear_clients(Client *clients, int actual) {
+void clear_clients(Client *clients, int actual) {
     int i = 0;
     for (i = 0; i < actual; i++)
         closesocket(clients[i].sock);
 }
 
-static void remove_client(Client *clients, int to_remove, int *actual) {
+void remove_client(Client *clients, int to_remove, int *actual) {
     memmove(clients + to_remove, clients + to_remove + 1,
             (*actual - to_remove - 1) * sizeof(Client));  // We remove the client from the array
     (*actual)--;    // Reducing the number of clients
 }
 
-static void
-send_message_to_all_clients(Client *clients, Client sender, int actual, const string buffer, char from_server) {
-    int i = 0;
-    string message;
-    message[0] = 0;
-    for (i = 0; i < actual; i++)
-        if (sender.sock != clients[i].sock) {
-            if (from_server == 0)
-                message = sender.name + " : ";
-            message += buffer;
-            write_client(clients[i].sock, message);
-        }
-}
-
-static void
-send_message_to_client(Client clients[MAX_CLIENTS], Client sender, Client receiver, int actual, const string buffer,
-                       char from_server) {
-    int i = 0;
-    string message;
-    for (i = 0; i < actual; i++) {
-        if (receiver.name == clients[i].name) {
-            if (!from_server) {
-                message = "[" + sender.name + "]";
-            } else {
-                message = "[SERVER]";
-            }
-            message += buffer;
-            write_client(clients[i].sock, message);
-        }
-    }
-
-}
-
-static int init_connection() {
+int init_connection() {
     SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);  // Initializing the socket : AF_INET = IPv4, SOCK_STREAM : TCP
     SOCKADDR_IN sin = {0};
 
@@ -168,35 +135,8 @@ static int init_connection() {
     return sock;
 }
 
-static void end_connection(int sock) {
+void end_connection(int sock) {
     closesocket(sock);
-}
-
-static string read_client(SOCKET sock) {
-    int n = 0;
-    char buf[BUF_SIZE];
-
-    if ((n = (int) recv(sock, buf, BUF_SIZE - 1, 0)) < 0) {
-        perror("recv()");
-        return "";  // If recv error we disconnect the client
-    }
-
-    buf[n] = 0;
-
-    string out = buf;
-
-    cout << "[DEBUG] " << out << endl;
-
-    if (out.length())
-        return out;
-    return "";
-}
-
-static void write_client(SOCKET sock, const string buffer) {
-    if (send(sock, buffer.c_str(), buffer.length(), 0) < 0) {
-        perror("send()");
-        exit(errno);
-    }
 }
 
 int main() {

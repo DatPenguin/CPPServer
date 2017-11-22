@@ -23,25 +23,27 @@ typedef struct sockaddr SOCKADDR;
 
 #include "client.h"
 
-static void run();
+void run();
 
-static int init_connection();
+int init_connection();
 
-static void end_connection(int sock);
+void end_connection(int sock);
 
-static std::string read_client(SOCKET sock);
+std::string read_client(SOCKET sock);
 
-static void write_client(SOCKET sock, std::string buffer);
+void write_client(SOCKET sock, std::string buffer);
 
-static void
+void
 send_message_to_all_clients(Client *clients, Client client, int actual, std::string buffer, char from_server);
 
-static void
+void
 send_message_to_client(Client *clients, Client sender, Client receiver, int actual, std::string buffer,
                        char from_server);
 
-static void remove_client(Client *clients, int to_remove, int *actual);
+void remove_client(Client *clients, int to_remove, int *actual);
 
-static void clear_clients(Client *clients, int actual);
+void clear_clients(Client *clients, int actual);
+
+void db_connect();
 
 #endif /* guard */
