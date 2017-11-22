@@ -140,6 +140,7 @@ void end_connection(int sock) {
 }
 
 int main() {
-    run();
+    //run();
+    db_connect();
     return EXIT_SUCCESS;
 }
