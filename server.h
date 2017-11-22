@@ -16,7 +16,6 @@ typedef struct sockaddr_in SOCKADDR_IN;
 typedef struct sockaddr SOCKADDR;
 typedef struct in_addr IN_ADDR;
 
-#define CRLF        "\r\n"
 #define PORT        5000
 #define MAX_CLIENTS    100
 
@@ -32,14 +31,15 @@ static int init_connection(void);
 
 static void end_connection(int sock);
 
-static int read_client(SOCKET sock, char *buffer);
+static int read_client(SOCKET sock, std::string buffer);
 
-static void write_client(SOCKET sock, const char *buffer);
+static void write_client(SOCKET sock, const std::string buffer);
 
 static void
-send_message_to_all_clients(Client *clients, Client client, int actual, const char *buffer, char from_server);
+send_message_to_all_clients(Client *clients, Client client, int actual, const std::string buffer, char from_server);
 
-static void send_message_to_client(Client *clients, Client sender, Client receiver, int actual, const char *buffer,
+static void
+send_message_to_client(Client *clients, Client sender, Client receiver, int actual, const std::string buffer,
                                    char from_server);
 
 static void remove_client(Client *clients, int to_remove, int *actual);
