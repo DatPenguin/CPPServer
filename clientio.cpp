@@ -1,5 +1,5 @@
 #include <iostream>
-#include "server.h"
+#include "includes/server.h"
 
 using namespace std;
 
@@ -11,7 +11,7 @@ send_message_to_all_clients(Client *clients, Client sender, int actual, const st
     for (i = 0; i < actual; i++)
         if (sender.sock != clients[i].sock) {
             if (from_server == 0)
-                message = sender.name + " : ";
+                message = sender.login + " : ";
             message += buffer;
             write_client(clients[i].sock, message);
         }
@@ -25,21 +25,23 @@ send_message_to_client(Client clients[MAX_CLIENTS], Client sender, Client receiv
     int i = 0;
     string message;
     for (i = 0; i < actual; i++) {
-        if (receiver.name == clients[i].name) {
+        if (receiver.login == clients[i].login) {
             if (!from_server) {
-                message = "[" + sender.name + "]";
+                message = "[" + sender.login + "]";
             } else {
                 message = "[SERVER]";
             }
             message += buffer;
             write_client(clients[i].sock, message);
 
-            cout << "Sent " << message << " to " << clients[i].name << endl;
+            cout << "Sent " << message << " to " << clients[i].login << endl;
         }
     }
 
 }
 
+void init_client(Client *c) {
+}
 
 void write_client(SOCKET sock, const string buffer) {
     if (send(sock, buffer.c_str(), buffer.length(), 0) < 0) {

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <pqxx/pqxx>
-#include "server.h"
+#include "includes/db.h"
+#include "includes/server.h"
 
 using namespace std;
 using namespace pqxx;
@@ -10,7 +11,7 @@ void db_connect() {
 
     cout << "Connecting..." << endl;
     try {
-        connection c("user=pguser password=password host=192.168.1.17 port=5432 dbname=postgres");
+        connection c(CONNECTION_STRING);
         if (c.is_open())
             cout << "Success !" << endl;
         else

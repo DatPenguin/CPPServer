@@ -21,7 +21,7 @@ typedef struct sockaddr SOCKADDR;
 
 #define BUF_SIZE    1024
 
-#include "client.h"
+#include "brickest.h"
 
 void run();
 

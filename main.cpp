@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cstring>
-#include "server.h"
+#include "includes/server.h"
 
 using namespace std;
 
@@ -39,7 +39,7 @@ void run() {
                 continue;
             }
 
-            if ((buffer = read_client(csock)) == "")   // After connecting, the client sends its name
+            if ((buffer = read_client(csock)).empty())   // After connecting, the client sends its login
                 continue; // Disconnects
 
             max = csock > max ? csock : max;    // returns the new max fd
@@ -48,7 +48,7 @@ void run() {
 
             Client c;
             c.sock = csock;
-            c.name = buffer;
+            c.login = buffer;
             clients[actual] = c;
             actual++;
         } else {
@@ -60,7 +60,7 @@ void run() {
                     if (buffer.empty()) {                       // A client disconnected
                         closesocket(clients[k].sock);
                         remove_client(clients, k, &actual);
-                        buffer = client.name;
+                        buffer = client.login;
                         buffer += " disconnected !";
                         send_message_to_all_clients(clients, client, actual, buffer, 1);
                     } else if (buffer == "send") {
@@ -70,13 +70,13 @@ void run() {
                             Client dest = {0};
                             int j;
                             for (j = 0; j < actual; j++) {
-                                if (clients[j].name == buffer) {
+                                if (clients[j].login == buffer) {
                                     dest = clients[j];
                                     break;
                                 } else
-                                    dest.name = "NULL";
+                                    dest.login = "NULL";
                             }
-                            if (dest.name != "NULL") {
+                            if (dest.login != "NULL") {
                                 send_message_to_client(clients, clients[k], clients[k], actual, "Message ? ", 1);
                                 buffer = read_client(clients[k].sock);
                                 if (buffer.length())
@@ -140,7 +140,9 @@ void end_connection(int sock) {
 }
 
 int main() {
-    //run();
-    db_connect();
+    /*cout << "Server started... Listening on port " << PORT << "..." << endl;
+    run();*/
+    Spell s = Spell("quitte ou double");
+    s.print();
     return EXIT_SUCCESS;
 }
