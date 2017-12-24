@@ -29,17 +29,6 @@ int init_connection();
 
 void end_connection(int sock);
 
-std::string read_client(SOCKET sock);
-
-void write_client(SOCKET sock, std::string buffer);
-
-void
-send_message_to_all_clients(Client *clients, Client client, int actual, std::string buffer, char from_server);
-
-void
-send_message_to_client(Client *clients, Client sender, Client receiver, int actual, std::string buffer,
-                       char from_server);
-
 void remove_client(Client *clients, int to_remove, int *actual);
 
 void clear_clients(Client *clients, int actual);

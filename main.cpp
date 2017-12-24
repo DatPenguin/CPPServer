@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cstring>
 #include "includes/server.h"
+#include "includes/util.h"
+#include "includes/clientio.h"
 
 using namespace std;
 
@@ -56,35 +58,25 @@ void run() {
             for (k = 0; k < actual; k++) {
                 if (FD_ISSET(clients[k].sock, &rdfs)) { // A client is talking
                     Client client = clients[k];
-                    buffer = read_client(clients[k].sock);
+                    buffer = read_client(client.sock);
                     if (buffer.empty()) {                       // A client disconnected
-                        closesocket(clients[k].sock);
+                        closesocket(client.sock);
                         remove_client(clients, k, &actual);
                         buffer = client.login;
                         buffer += " disconnected !";
                         send_message_to_all_clients(clients, client, actual, buffer, 1);
                     } else if (buffer == "send") {
-                        send_message_to_client(clients, clients[k], clients[k], actual, "Destination ? ", 1);
-                        buffer = read_client(clients[k].sock);
-                        if (buffer.length()) {
-                            Client dest = {0};
-                            int j;
-                            for (j = 0; j < actual; j++) {
-                                if (clients[j].login == buffer) {
-                                    dest = clients[j];
-                                    break;
-                                } else
-                                    dest.login = "NULL";
-                            }
-                            if (dest.login != "NULL") {
-                                send_message_to_client(clients, clients[k], clients[k], actual, "Message ? ", 1);
-                                buffer = read_client(clients[k].sock);
-                                if (buffer.length())
-                                    send_message_to_client(clients, clients[k], dest, actual, buffer, 0);
-                            } else
-                                send_message_to_client(clients, clients[k], clients[k], actual,
-                                                       "No client found with this pseudo.", 1);
-                        }
+                        command_send(clients, k, actual);
+                    } else if (startsWith(buffer, "BAUTH")) {
+                        p_BAUTH(clients, k, actual, buffer);
+                    } else if (startsWith(buffer, "BPING")) {
+                        p_BPING(clients, k, actual);
+                    } else if (startsWith(buffer, "BCLASSESR")) {
+                        p_BCLASSESR(clients, k, actual, clients[k].login);
+                    } else if (buffer == "close") {
+                        clear_clients(clients, actual);
+                        end_connection(sock);
+                        return;
                     } else
                         send_message_to_all_clients(clients, client, actual, buffer, 0);
                     break;
@@ -110,7 +102,14 @@ void remove_client(Client *clients, int to_remove, int *actual) {
 }
 
 int init_connection() {
+    int enable = 1;
+
     SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);  // Initializing the socket : AF_INET = IPv4, SOCK_STREAM : TCP
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+        perror("setsockopt(SO_REUSEADDR");
+        exit(errno);
+    }
+
     SOCKADDR_IN sin = {0};
 
     if (sock == INVALID_SOCKET) {   // if socket() returned -1
@@ -140,9 +139,9 @@ void end_connection(int sock) {
 }
 
 int main() {
-    /*cout << "Server started... Listening on port " << PORT << "..." << endl;
-    run();*/
-    Spell s = Spell("quitte ou double");
-    s.print();
+    cout << "Server started... Listening on port " << PORT << "..." << endl;
+    run();
+    /*Spell s = Spell("quitte ou double");
+    s.print();*/
     return EXIT_SUCCESS;
 }
