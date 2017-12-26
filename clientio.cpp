@@ -2,6 +2,7 @@
 #include "includes/clientio.h"
 
 using namespace std;
+using namespace pqxx;
 
 void
 send_message_to_all_clients(Client *clients, Client sender, int actual, const string buffer, char from_server) {
@@ -20,17 +21,11 @@ send_message_to_all_clients(Client *clients, Client sender, int actual, const st
 }
 
 void
-send_message_to_client(Client clients[MAX_CLIENTS], Client sender, Client receiver, int actual, const string buffer,
-                       char from_server) {
+send_message_to_client(Client *clients, Client sender, Client receiver, int actual, std::string buffer) {
     int i = 0;
     string message;
     for (i = 0; i < actual; i++) {
         if (receiver.login == clients[i].login) {
-            if (!from_server) {
-                message = "[" + sender.login + "]";
-            } else {
-                message = "[SERVER]";
-            }
             message += buffer;
             write_client(clients[i].sock, message);
 
@@ -66,7 +61,7 @@ string read_client(SOCKET sock) {
 }
 
 void command_send(Client clients[], int k, int actual) {
-    send_message_to_client(clients, clients[k], clients[k], actual, "Destination ? ", 1);
+    send_message_to_client(clients, clients[k], clients[k], actual, "Destination ? ");
     string buffer = read_client(clients[k].sock);
     if (buffer.length()) {
         Client dest = {0};
@@ -79,30 +74,30 @@ void command_send(Client clients[], int k, int actual) {
                 dest.login = "NULL";
         }
         if (dest.login != "NULL") {
-            send_message_to_client(clients, clients[k], clients[k], actual, "Message ? ", 1);
+            send_message_to_client(clients, clients[k], clients[k], actual, "Message ? ");
             buffer = read_client(clients[k].sock);
             if (buffer.length())
-                send_message_to_client(clients, clients[k], dest, actual, buffer, 0);
+                send_message_to_client(clients, clients[k], dest, actual, buffer);
         } else
-            send_message_to_client(clients, clients[k], clients[k], actual,
-                                   "No client found with this pseudo.", 1);
+            send_message_to_client(clients, clients[k], clients[k], actual, "No client found with this pseudo.");
     }
 }
+
+/// Protocol
 
 void p_BPING(Client clients[], int k, int actual) {
     p_BPONG(clients, k, actual);
 }
 
 void p_BPONG(Client clients[], int k, int actual) {
-    send_message_to_client(clients, clients[k], clients[k], actual, "BPONG", 1);
+    send_message_to_client(clients, clients[k], clients[k], actual, "BPONG");
 }
 
 void p_BAUTH(Client clients[], int k, int actual, string buffer) {
     string login, pwd;
     vector<string> v = split(buffer, ',');
     if (v.size() < 3) {
-        send_message_to_client(clients, clients[k], clients[k], actual,
-                               "T'es qu'une grosse merde", 1);
+        send_message_to_client(clients, clients[k], clients[k], actual, "T'es qu'une grosse merde");
         return;
     }
     login = v[1];
@@ -112,18 +107,170 @@ void p_BAUTH(Client clients[], int k, int actual, string buffer) {
 }
 
 void p_BLOGIN(Client clients[], int k, int actual, string login, string pwd) {
-    send_message_to_client(clients, clients[k], clients[k], actual,
-                           "BLOGIN,Received login : " + login + ", received pwd : " + pwd, 1);
-    // TODO Interroger la BD avec le login et le mdp et envoyer au client un entier en fonction de la réussite ou non de la connexion
+    string db_pwd, sql;
+
+    try {
+        connection c(CONNECTION_STRING);
+        if (!c.is_open())
+            cerr << "Can't open the database" << endl;
+
+        sql = "SELECT * FROM player_account WHERE login LIKE '" + login + "'";
+        nontransaction n(c);
+        result r(n.exec(sql));
+
+        if (r.size() != 1) {
+            send_message_to_client(clients, clients[k], clients[k], actual, "BLOGIN,2");
+            return;
+        }
+
+        for (result::const_iterator c = r.begin(); c != r.end(); ++c)
+            db_pwd = c[1].as<string>();
+
+        if (db_pwd != pwd) {
+            send_message_to_client(clients, clients[k], clients[k], actual, "BLOGIN,1");
+            return;
+        }
+
+        send_message_to_client(clients, clients[k], clients[k], actual, "BLOGIN,0");
+        clients[k].is_auth = true;
+        clients[k].login = login;
+
+    } catch (const exception &e) {
+        cerr << e.what() << endl;
+    }
 }
 
-void p_BCLASSESR(Client clients[], int k, int actual, string pseudo) {
-    // TODO Interroger la BD pour avoir la liste des classes disponibles pour un pseudo donné
-    vector<Spell> classList;
-    p_BCLASSESA(clients, k, actual, classList);
+void p_BCLASSESR(Client clients[], int k, int actual, string buffer) {
+    vector<string> a = split(buffer, ',');
+
+    p_BCLASSESA(clients, k, actual, a[1]);
 }
 
-void p_BCLASSESA(Client clients[], int k, int actual,
-                 vector<Spell> classList) {    // TODO Remplacer vector<Spell> par vector<Class>
-    send_message_to_client(clients, clients[k], clients[k], actual, "BCLASSESA,Classes disponibles :", 1);
+void p_BCLASSESA(Client clients[], int k, int actual, string login) {
+    string sql, classes = "BCLASSESA";
+
+    try {
+        connection c(CONNECTION_STRING);
+        if (!c.is_open())
+            cerr << "Can't open the database" << endl;
+
+        sql = "SELECT * FROM has_class WHERE login LIKE '" + login + "'";
+        nontransaction n(c);
+        result r(n.exec(sql));
+
+        if (r.size() < 1) {
+            send_message_to_client(clients, clients[k], clients[k], actual, "BCLASSESA,NULL");
+            return;
+        }
+
+        for (result::const_iterator c = r.begin(); c != r.end(); ++c) {
+            classes += "," + c[0].as<string>();
+        }
+
+        send_message_to_client(clients, clients[k], clients[k], actual, classes);
+
+    } catch (const exception &e) {
+        cerr << e.what() << endl;
+    }
+}
+
+void p_BSPELLSR(Client *clients, int k, int actual, string buffer) {
+    // TODO Interroger la BD pour avoir les sorts disponibles pour un login
+    vector<string> a;
+    if (split(buffer, ',').size() < 2)
+        return;
+    p_BSPELLSA(clients, k, actual, a[1]);
+}
+
+void p_BSPELLSA(Client *clients, int k, int actual, std::string login) {
+    string sql, spells = "BSPELLSA";
+
+    try {
+        connection c(CONNECTION_STRING);
+        if (!c.is_open())
+            cerr << "Can't open the database" << endl;
+
+        sql = "SELECT * FROM spell WHERE login LIKE '" + login + "'";
+        nontransaction n(c);
+        result r(n.exec(sql));
+
+        if (r.size() < 1) {
+            send_message_to_client(clients, clients[k], clients[k], actual, "BSPELLSA,NULL");
+            return;
+        }
+
+        for (result::const_iterator c = r.begin(); c != r.end(); ++c) {
+            for (int i = 0; i < c.size(); i++)
+                spells += "," + c[i].as<string>();
+        }
+
+        send_message_to_client(clients, clients[k], clients[k], actual, spells);
+
+    } catch (const exception &e) {
+        cerr << e.what() << endl;
+    }
+}
+
+void p_BSPELLSC(Client *clients, int k, int actual, std::string chosenList) {
+    vector<string> cl = split(chosenList, ',');
+    for (const string &spell : cl) {
+        auto s = Spell(spell);
+        if (s.getSpellName() != "")
+            s.print();
+    }
+
+    p_BSPELLSACK(clients, k, actual);
+}
+
+void p_BSPELLSACK(Client *clients, int k, int actual) {
+    send_message_to_client(clients, clients[k], clients[k], actual, "BSPELLSACK");
+}
+
+void p_BMAKE(Client *clients, int k, int actual) {
+    p_BWAIT(clients, k, actual);
+}
+
+void p_BWAIT(Client *clients, int k, int actual) {
+    send_message_to_client(clients, clients[k], clients[k], actual, "BWAIT");
+}
+
+void p_BMATCH(Client *clients, int k, int actual, Player p1, Player p2) {
+    send_message_to_client(clients, clients[k], clients[k], actual, p1.toString() + "," + p2.toString());
+}
+
+void p_BFIGHT(Client *clients, int k, int actual, std::string buffer) {
+    vector<string> spell = split(buffer, ',');
+    if (spell.size() > 1)
+        cout << "Used spell" << spell[1] << endl;
+}
+
+void p_BREF(Client *clients, int k, int actual, Player p1, Player p2) {
+    send_message_to_client(clients, clients[k], clients[k], actual, p1.toString() + "," + p2.toString());
+}
+
+void p_BWIN(Client *clients, int k, int actual) {
+    // TODO Calculer le nouvel elo du joueur et lui envoyer
+    send_message_to_client(clients, clients[k], clients[k], actual, "BWIN");
+}
+
+void p_BLOSE(Client *clients, int k, int actual) {
+    // TODO Calculer le nouvel elo du joueur et lui envoyer
+    send_message_to_client(clients, clients[k], clients[k], actual, "BLOSE");
+}
+
+void p_BLOGOUT(Client *clients, int k, int actual) {
+    // TODO Gérer la déconnexion du client
+    p_BBYE(clients, k, actual);
+}
+
+void p_BBYE(Client *clients, int k, int actual) {
+    send_message_to_client(clients, clients[k], clients[k], actual, "BBYE");
+}
+
+void p_BTIMEDOUT(Client *clients, int k, int actual) {
+    send_message_to_client(clients, clients[k], clients[k], actual, "BBYE");
+}
+
+void p_BFALL(Client *clients, int k, int actual) {
+    send_message_to_client(clients, clients[k], clients[k], actual, "LOL T NUL");
 }

@@ -12,10 +12,8 @@ void db_connect() {
     cout << "Connecting..." << endl;
     try {
         connection c(CONNECTION_STRING);
-        if (c.is_open())
-            cout << "Success !" << endl;
-        else
-            cout << "Can't open the database" << endl;
+        if (!c.is_open())
+            cerr << "Can't open the database" << endl;
 
         sql = "SELECT * FROM tabletest";
         nontransaction n(c);

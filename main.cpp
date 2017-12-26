@@ -72,7 +72,17 @@ void run() {
                     } else if (startsWith(buffer, "BPING")) {
                         p_BPING(clients, k, actual);
                     } else if (startsWith(buffer, "BCLASSESR")) {
-                        p_BCLASSESR(clients, k, actual, clients[k].login);
+                        p_BCLASSESR(clients, k, actual, buffer);
+                    } else if (startsWith(buffer, "BSPELLSR")) {
+                        p_BSPELLSR(clients, k, actual, buffer);
+                    } else if (startsWith(buffer, "BSPELLSC")) {
+                        p_BSPELLSC(clients, k, actual, buffer);
+                    } else if (startsWith(buffer, "BMAKE")) {
+                        p_BMAKE(clients, k, actual);
+                    } else if (startsWith(buffer, "BFIGHT")) {
+                        p_BFIGHT(clients, k, actual, buffer);
+                    } else if (startsWith(buffer, "BLOGOUT")) {
+                        p_BLOGOUT(clients, k, actual);
                     } else if (buffer == "close") {
                         clear_clients(clients, actual);
                         end_connection(sock);

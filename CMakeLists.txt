@@ -10,7 +10,16 @@ set(HEADER_FILES includes/server.h
 set(SOURCE_FILES main.cpp
         clientio.cpp
         dbconnection.cpp
-        spell.cpp includes/spell.h includes/db.h util.cpp includes/util.h includes/clientio.h)
+        Spell.cpp
+        includes/Spell.h
+        includes/db.h
+        util.cpp
+        includes/util.h
+        includes/clientio.h
+        Fighter.cpp
+        includes/Fighter.h
+        Player.cpp
+        includes/Player.h)
 
 add_executable(CPPServer ${SOURCE_FILES} ${HEADER_FILES})
 

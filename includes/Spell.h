@@ -29,7 +29,11 @@ class Spell {
 public:
     explicit Spell(std::string name);
 
+    const std::string &getSpellName() const;
+
     void print();
+
+    std::string toString();
 };
 
 std::ostream &operator<<(std::ostream, Spell const &);

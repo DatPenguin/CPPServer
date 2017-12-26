@@ -1,18 +1,14 @@
-#include "includes/spell.h"
+#include "includes/Spell.h"
 
 using namespace std;
 using namespace pqxx;
 
 Spell::Spell(const string name) {
     const char *sql;
-
-    cout << "Connecting..." << endl;
     try {
         connection c(CONNECTION_STRING);
-        if (c.is_open())
-            cout << "Success !" << endl;
-        else
-            cout << "Can't open the database" << endl;
+        if (!c.is_open())
+            cerr << "Can't open the database" << endl;
 
         sql = "SELECT * FROM spell";
         nontransaction n(c);
@@ -44,4 +40,16 @@ void Spell::print() {
     cout << spellName << "," << ballSpeed << "," << ballSpeed_o << "," << paddleSize << "," << paddleSize_o << ","
          << paddleSpeed << "," << paddleSpeed_o << "," << damages << "," << damages_o << "," << shield << ","
          << ball_multiplication << "," << ball_multiplication_o << endl;
+}
+
+const string &Spell::getSpellName() const {
+    return spellName;
+}
+
+std::string Spell::toString() {
+    stringstream ss;
+    ss << spellName << ";" << ballSpeed << ";" << ballSpeed_o << ";" << paddleSize << ";" << paddleSize_o << ";"
+       << paddleSpeed << ";" << paddleSpeed_o << ";" << damages << ";" << damages_o << ";" << shield << ";"
+       << ball_multiplication << ";" << ball_multiplication_o << endl;
+    return ss.str();
 }

@@ -3,11 +3,12 @@
 
 #include <string>
 #include <iostream>
-#include "spell.h"
+#include "Spell.h"
 
 typedef struct { // NOLINT
     SOCKET sock;
     std::string login;
+    bool is_auth = false;
 } Client;
 
 typedef struct {
