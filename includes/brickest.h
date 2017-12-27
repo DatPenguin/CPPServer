@@ -4,12 +4,7 @@
 #include <string>
 #include <iostream>
 #include "Spell.h"
-
-typedef struct { // NOLINT
-    SOCKET sock;
-    std::string login;
-    bool is_auth = false;
-} Client;
+#include "Client.h"
 
 typedef struct {
     Client c1;

@@ -11,20 +11,23 @@
 #include "Fighter.h"
 #include "Spell.h"
 
-class Player {
+class Client {
 public:
-    explicit Player(int socket);
+    explicit Client(int socket);
+
+    explicit Client();
 
     std::string toString();
 
-private:
-    int socket;
+public:
+    int sock;
     std::string login;
     std::vector<std::string> heroList;
     std::string selectedHero;
-    Fighter *combatInfos;
+    Fighter combatInfos;
     std::vector<Spell> spellsList;
     std::vector<Spell> selectedSpells;
+    bool is_auth = false;
 };
 
 

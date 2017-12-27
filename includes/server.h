@@ -33,6 +33,4 @@ void remove_client(Client *clients, int to_remove, int *actual);
 
 void clear_clients(Client *clients, int actual);
 
-void db_connect();
-
 #endif /* guard */

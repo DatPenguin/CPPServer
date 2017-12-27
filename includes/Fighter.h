@@ -12,7 +12,6 @@
 class Fighter {
 public:
     explicit Fighter(std::string login);
-
     explicit Fighter();
 
 private:
@@ -24,11 +23,6 @@ private:
     int buttonSize;
     int paddleSize;
     std::string login;
-
-public:
-    //explicit Spell(std::string name);
-
-    //void print();
 };
 
 #endif //CPPSERVER_FIGHTER_H

@@ -3,13 +3,17 @@
 * Copyright (c) 2017-2018 The Dankest Production. All rights reserved.
 */
 
-#include "includes/Player.h"
+#include "includes/Client.h"
 
-Player::Player(int socket) : socket(socket) {
+Client::Client(int socket) : sock(socket) {
     combatInfos = new Fighter();
 }
 
-std::string Player::toString() {
+std::string Client::toString() {
     // TODO Faire un vrai toString()
     return login;
+}
+
+Client::Client() {
+    combatInfos = new Fighter();
 }

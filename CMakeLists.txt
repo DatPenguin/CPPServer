@@ -9,7 +9,6 @@ set(HEADER_FILES includes/server.h
 
 set(SOURCE_FILES main.cpp
         clientio.cpp
-        dbconnection.cpp
         Spell.cpp
         includes/Spell.h
         includes/db.h
@@ -18,14 +17,14 @@ set(SOURCE_FILES main.cpp
         includes/clientio.h
         Fighter.cpp
         includes/Fighter.h
-        Player.cpp
-        includes/Player.h)
+        Client.cpp
+        includes/Client.h)
 
 add_executable(CPPServer ${SOURCE_FILES} ${HEADER_FILES})
 
 #find_package(PostgreSQL REQUIRED)
 
 #target_compile_options(CPPServer PRIVATE -Wall -Wextra -ansi -pedantic -Wno-missing-field-initializers -std=c++1y)
-target_compile_options(CPPServer PRIVATE -Wall -Wextra -ansi -pedantic -Wno-missing-field-initializers -std=c++14)
+target_compile_options(CPPServer PRIVATE -Wall -Wextra -ansi -pedantic -Wno-missing-field-initializers -Wno-unused-parameter -std=c++14)
 
 target_link_libraries(CPPServer pqxx)

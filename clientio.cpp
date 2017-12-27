@@ -5,33 +5,10 @@ using namespace std;
 using namespace pqxx;
 
 void
-send_message_to_all_clients(Client *clients, Client sender, int actual, const string buffer, char from_server) {
+send_message_to_client(Client *clients, Client receiver, std::string buffer) {
     int i = 0;
-    string message;
-    message[0] = 0;
-    for (i = 0; i < actual; i++)
-        if (sender.sock != clients[i].sock) {
-            if (from_server == 0)
-                message = sender.login + " : ";
-            message += buffer;
-            write_client(clients[i].sock, message);
-        }
-
-    cout << "Broadcasted \"" << message << "\" to all" << endl;
-}
-
-void
-send_message_to_client(Client *clients, Client sender, Client receiver, int actual, std::string buffer) {
-    int i = 0;
-    string message;
-    for (i = 0; i < actual; i++) {
-        if (receiver.login == clients[i].login) {
-            message += buffer;
-            write_client(clients[i].sock, message);
-
-            cout << "Sent " << message << " to " << clients[i].login << endl;
-        }
-    }
+    write_client(receiver.sock, buffer);
+    cout << "Sent " << buffer << " to " << clients[i].login << endl;
 
 }
 
@@ -60,53 +37,30 @@ string read_client(SOCKET sock) {
     return out;
 }
 
-void command_send(Client clients[], int k, int actual) {
-    send_message_to_client(clients, clients[k], clients[k], actual, "Destination ? ");
-    string buffer = read_client(clients[k].sock);
-    if (buffer.length()) {
-        Client dest = {0};
-        int j;
-        for (j = 0; j < actual; j++) {
-            if (clients[j].login == buffer) {
-                dest = clients[j];
-                break;
-            } else
-                dest.login = "NULL";
-        }
-        if (dest.login != "NULL") {
-            send_message_to_client(clients, clients[k], clients[k], actual, "Message ? ");
-            buffer = read_client(clients[k].sock);
-            if (buffer.length())
-                send_message_to_client(clients, clients[k], dest, actual, buffer);
-        } else
-            send_message_to_client(clients, clients[k], clients[k], actual, "No client found with this pseudo.");
-    }
-}
-
 /// Protocol
 
-void p_BPING(Client clients[], int k, int actual) {
-    p_BPONG(clients, k, actual);
+void p_BPING(Client clients[], int k) {
+    p_BPONG(clients, k);
 }
 
-void p_BPONG(Client clients[], int k, int actual) {
-    send_message_to_client(clients, clients[k], clients[k], actual, "BPONG");
+void p_BPONG(Client clients[], int k) {
+    send_message_to_client(clients, clients[k], "BPONG");
 }
 
-void p_BAUTH(Client clients[], int k, int actual, string buffer) {
+void p_BAUTH(Client clients[], int k, string buffer) {
     string login, pwd;
     vector<string> v = split(buffer, ',');
     if (v.size() < 3) {
-        send_message_to_client(clients, clients[k], clients[k], actual, "T'es qu'une grosse merde");
+        send_message_to_client(clients, clients[k], "T'es qu'une grosse merde");
         return;
     }
     login = v[1];
     pwd = v[2];
 
-    p_BLOGIN(clients, k, actual, login, pwd);
+    p_BLOGIN(clients, k, login, pwd);
 }
 
-void p_BLOGIN(Client clients[], int k, int actual, string login, string pwd) {
+void p_BLOGIN(Client clients[], int k, string login, string pwd) {
     string db_pwd, sql;
 
     try {
@@ -119,19 +73,19 @@ void p_BLOGIN(Client clients[], int k, int actual, string login, string pwd) {
         result r(n.exec(sql));
 
         if (r.size() != 1) {
-            send_message_to_client(clients, clients[k], clients[k], actual, "BLOGIN,2");
+            send_message_to_client(clients, clients[k], "BLOGIN,2");
             return;
         }
 
-        for (result::const_iterator c = r.begin(); c != r.end(); ++c)
-            db_pwd = c[1].as<string>();
+        for (result::const_iterator ci = r.begin(); ci != r.end(); ++ci)
+            db_pwd = ci[1].as<string>();
 
         if (db_pwd != pwd) {
-            send_message_to_client(clients, clients[k], clients[k], actual, "BLOGIN,1");
+            send_message_to_client(clients, clients[k], "BLOGIN,1");
             return;
         }
 
-        send_message_to_client(clients, clients[k], clients[k], actual, "BLOGIN,0");
+        send_message_to_client(clients, clients[k], "BLOGIN,0");
         clients[k].is_auth = true;
         clients[k].login = login;
 
@@ -140,13 +94,13 @@ void p_BLOGIN(Client clients[], int k, int actual, string login, string pwd) {
     }
 }
 
-void p_BCLASSESR(Client clients[], int k, int actual, string buffer) {
+void p_BCLASSESR(Client clients[], int k, string buffer) {
     vector<string> a = split(buffer, ',');
 
-    p_BCLASSESA(clients, k, actual, a[1]);
+    p_BCLASSESA(clients, k, a[1]);
 }
 
-void p_BCLASSESA(Client clients[], int k, int actual, string login) {
+void p_BCLASSESA(Client clients[], int k, string login) {
     string sql, classes = "BCLASSESA";
 
     try {
@@ -158,31 +112,31 @@ void p_BCLASSESA(Client clients[], int k, int actual, string login) {
         nontransaction n(c);
         result r(n.exec(sql));
 
-        if (r.size() < 1) {
-            send_message_to_client(clients, clients[k], clients[k], actual, "BCLASSESA,NULL");
+        if (r.empty()) {
+            send_message_to_client(clients, clients[k], "BCLASSESA,NULL");
             return;
         }
 
-        for (result::const_iterator c = r.begin(); c != r.end(); ++c) {
-            classes += "," + c[0].as<string>();
+        for (result::const_iterator ci = r.begin(); ci != r.end(); ++ci) {
+            classes += "," + ci[0].as<string>();
+            clients[k].heroList.push_back(ci[0].as<string>());
         }
-
-        send_message_to_client(clients, clients[k], clients[k], actual, classes);
+        send_message_to_client(clients, clients[k], classes);
 
     } catch (const exception &e) {
         cerr << e.what() << endl;
     }
 }
 
-void p_BSPELLSR(Client *clients, int k, int actual, string buffer) {
+void p_BSPELLSR(Client *clients, int k, string buffer) {
     // TODO Interroger la BD pour avoir les sorts disponibles pour un login
     vector<string> a;
     if (split(buffer, ',').size() < 2)
         return;
-    p_BSPELLSA(clients, k, actual, a[1]);
+    p_BSPELLSA(clients, k, a[1]);
 }
 
-void p_BSPELLSA(Client *clients, int k, int actual, std::string login) {
+void p_BSPELLSA(Client *clients, int k, std::string login) {
     string sql, spells = "BSPELLSA";
 
     try {
@@ -194,83 +148,83 @@ void p_BSPELLSA(Client *clients, int k, int actual, std::string login) {
         nontransaction n(c);
         result r(n.exec(sql));
 
-        if (r.size() < 1) {
-            send_message_to_client(clients, clients[k], clients[k], actual, "BSPELLSA,NULL");
+        if (r.empty()) {
+            send_message_to_client(clients, clients[k], "BSPELLSA,NULL");
             return;
         }
 
-        for (result::const_iterator c = r.begin(); c != r.end(); ++c) {
-            for (int i = 0; i < c.size(); i++)
-                spells += "," + c[i].as<string>();
+        for (result::const_iterator ci = r.begin(); ci != r.end(); ++ci) {
+            for (unsigned int i = 0; i < ci.size(); i++)
+                spells += "," + ci[i].as<string>();
         }
 
-        send_message_to_client(clients, clients[k], clients[k], actual, spells);
+        send_message_to_client(clients, clients[k], spells);
 
     } catch (const exception &e) {
         cerr << e.what() << endl;
     }
-}
+}   // WAIT Implémentation en attente de MAJ BD
 
-void p_BSPELLSC(Client *clients, int k, int actual, std::string chosenList) {
+void p_BSPELLSC(Client *clients, int k, std::string chosenList) {
     vector<string> cl = split(chosenList, ',');
     for (const string &spell : cl) {
         auto s = Spell(spell);
-        if (s.getSpellName() != "")
-            s.print();
+        if (!s.getSpellName().empty())
+            clients[k].spellsList.push_back(s);
     }
-
-    p_BSPELLSACK(clients, k, actual);
+    p_BSPELLSACK(clients, k);
 }
 
-void p_BSPELLSACK(Client *clients, int k, int actual) {
-    send_message_to_client(clients, clients[k], clients[k], actual, "BSPELLSACK");
+void p_BSPELLSACK(Client *clients, int k) {
+    send_message_to_client(clients, clients[k], "BSPELLSACK");
 }
 
-void p_BMAKE(Client *clients, int k, int actual) {
-    p_BWAIT(clients, k, actual);
+void p_BMAKE(Client *clients, int k) {
+    p_BWAIT(clients, k);
 }
 
-void p_BWAIT(Client *clients, int k, int actual) {
-    send_message_to_client(clients, clients[k], clients[k], actual, "BWAIT");
+void p_BWAIT(Client *clients, int k) {
+    send_message_to_client(clients, clients[k], "BWAIT");
 }
 
-void p_BMATCH(Client *clients, int k, int actual, Player p1, Player p2) {
-    send_message_to_client(clients, clients[k], clients[k], actual, p1.toString() + "," + p2.toString());
+void p_BMATCH(Client *clients, int k, Client p1, Client p2) {
+    send_message_to_client(clients, clients[k], p1.toString() + "," + p2.toString());
 }
 
-void p_BFIGHT(Client *clients, int k, int actual, std::string buffer) {
-    vector<string> spell = split(buffer, ',');
-    if (spell.size() > 1)
-        cout << "Used spell" << spell[1] << endl;
+void p_BFIGHT(Client *clients, int k, std::string buffer) {
+    vector<string> buf = split(buffer, ',');
+    if (buf.size() > 1) {
+        string spell = buf[1];
+        cout << "Used spell : " << Spell(spell).toString() << endl;
+    }
+} // TODO Revoir les arguments de la fonction
+
+void p_BREF(Client *clients, int k, Client p1, Client p2) {
+    send_message_to_client(clients, clients[k], p1.toString() + "," + p2.toString());
 }
 
-void p_BREF(Client *clients, int k, int actual, Player p1, Player p2) {
-    send_message_to_client(clients, clients[k], clients[k], actual, p1.toString() + "," + p2.toString());
-}
+void p_BWIN(Client *clients, int k) {
+    send_message_to_client(clients, clients[k], "BWIN");
+} // TODO Calculer le nouvel elo du joueur et lui envoyer
 
-void p_BWIN(Client *clients, int k, int actual) {
-    // TODO Calculer le nouvel elo du joueur et lui envoyer
-    send_message_to_client(clients, clients[k], clients[k], actual, "BWIN");
-}
+void p_BLOSE(Client *clients, int k) {
+    send_message_to_client(clients, clients[k], "BLOSE");
+} // TODO Calculer le nouvel elo du joueur et lui envoyer
 
-void p_BLOSE(Client *clients, int k, int actual) {
-    // TODO Calculer le nouvel elo du joueur et lui envoyer
-    send_message_to_client(clients, clients[k], clients[k], actual, "BLOSE");
-}
-
-void p_BLOGOUT(Client *clients, int k, int actual) {
-    // TODO Gérer la déconnexion du client
+void p_BLOGOUT(Client *clients, int k, int *actual) {
     p_BBYE(clients, k, actual);
+} // TODO Gérer la déconnexion du client
+
+void p_BBYE(Client *clients, int k, int *actual) {
+    send_message_to_client(clients, clients[k], "BBYE");
+    clients[k].is_auth = false;
+    remove_client(clients, k, actual);
 }
 
-void p_BBYE(Client *clients, int k, int actual) {
-    send_message_to_client(clients, clients[k], clients[k], actual, "BBYE");
+void p_BTIMEDOUT(Client *clients, int k) {
+    send_message_to_client(clients, clients[k], "BBYE");
 }
 
-void p_BTIMEDOUT(Client *clients, int k, int actual) {
-    send_message_to_client(clients, clients[k], clients[k], actual, "BBYE");
-}
-
-void p_BFALL(Client *clients, int k, int actual) {
-    send_message_to_client(clients, clients[k], clients[k], actual, "LOL T NUL");
-}
+void p_BFALL(Client *clients, int k) {
+    send_message_to_client(clients, clients[k], "LOL T NUL");
+} // TODO Ajouter une fonction permettant de faire perdre un PV au joueur

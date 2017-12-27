@@ -14,21 +14,21 @@ Spell::Spell(const string name) {
         nontransaction n(c);
         result r(n.exec(sql));
 
-        for (result::const_iterator c = r.begin(); c != r.end(); ++c) {
-            if (c[0].as<string>() != name)
+        for (result::const_iterator ci = r.begin(); ci != r.end(); ++ci) {
+            if (ci[0].as<string>() != name)
                 continue;
-            spellName = c[0].as<string>();
-            ballSpeed = c[1].as<int>();
-            ballSpeed_o = c[2].as<int>();
-            paddleSize = c[3].as<int>();
-            paddleSize_o = c[4].as<int>();
-            paddleSpeed = c[5].as<int>();
-            paddleSpeed_o = c[6].as<int>();
-            damages = c[7].as<int>();
-            damages_o = c[8].as<int>();
-            shield = c[9].as<int>();
-            ball_multiplication = c[10].as<int>();
-            ball_multiplication_o = c[11].as<int>();
+            spellName = ci[0].as<string>();
+            ballSpeed = ci[1].as<int>();
+            ballSpeed_o = ci[2].as<int>();
+            paddleSize = ci[3].as<int>();
+            paddleSize_o = ci[4].as<int>();
+            paddleSpeed = ci[5].as<int>();
+            paddleSpeed_o = ci[6].as<int>();
+            damages = ci[7].as<int>();
+            damages_o = ci[8].as<int>();
+            shield = ci[9].as<int>();
+            ball_multiplication = ci[10].as<int>();
+            ball_multiplication_o = ci[11].as<int>();
         }
 
     } catch (const exception &e) {

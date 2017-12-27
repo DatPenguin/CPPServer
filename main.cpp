@@ -62,33 +62,32 @@ void run() {
                     if (buffer.empty()) {                       // A client disconnected
                         closesocket(client.sock);
                         remove_client(clients, k, &actual);
-                        buffer = client.login;
-                        buffer += " disconnected !";
-                        send_message_to_all_clients(clients, client, actual, buffer, 1);
-                    } else if (buffer == "send") {
-                        command_send(clients, k, actual);
                     } else if (startsWith(buffer, "BAUTH")) {
-                        p_BAUTH(clients, k, actual, buffer);
+                        p_BAUTH(clients, k, buffer);
                     } else if (startsWith(buffer, "BPING")) {
-                        p_BPING(clients, k, actual);
+                        p_BPING(clients, k);
                     } else if (startsWith(buffer, "BCLASSESR")) {
-                        p_BCLASSESR(clients, k, actual, buffer);
+                        p_BCLASSESR(clients, k, buffer);
                     } else if (startsWith(buffer, "BSPELLSR")) {
-                        p_BSPELLSR(clients, k, actual, buffer);
+                        p_BSPELLSR(clients, k, buffer);
                     } else if (startsWith(buffer, "BSPELLSC")) {
-                        p_BSPELLSC(clients, k, actual, buffer);
+                        p_BSPELLSC(clients, k, buffer);
                     } else if (startsWith(buffer, "BMAKE")) {
-                        p_BMAKE(clients, k, actual);
+                        p_BMAKE(clients, k);
                     } else if (startsWith(buffer, "BFIGHT")) {
-                        p_BFIGHT(clients, k, actual, buffer);
+                        p_BFIGHT(clients, k, buffer);
                     } else if (startsWith(buffer, "BLOGOUT")) {
-                        p_BLOGOUT(clients, k, actual);
+                        p_BLOGOUT(clients, k, &actual);
                     } else if (buffer == "close") {
                         clear_clients(clients, actual);
                         end_connection(sock);
                         return;
-                    } else
-                        send_message_to_all_clients(clients, client, actual, buffer, 0);
+                    } else if (buffer == "AUTH?") {
+                        if (clients[k].is_auth)
+                            send_message_to_client(clients, clients[k], "AUTH");
+                        else
+                            send_message_to_client(clients, clients[k], "NOT AUTH");
+                    }
                     break;
                 }
             }
