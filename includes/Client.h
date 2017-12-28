@@ -19,16 +19,15 @@ public:
 
     std::string toString();
 
-public:
     int sock;
+	int mmIndex;
     std::string login;
     std::vector<std::string> heroList;
-    std::string selectedHero;
+	std::string selectedClass;
     Fighter combatInfos;
     std::vector<Spell> spellsList;
     std::vector<Spell> selectedSpells;
     bool is_auth = false;
 };
-
 
 #endif //CPPSERVER_PLAYER_H

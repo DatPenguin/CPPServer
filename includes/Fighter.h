@@ -11,18 +11,21 @@
 
 class Fighter {
 public:
-    explicit Fighter(std::string login);
-    explicit Fighter();
+	explicit Fighter(std::string login);
+
+	explicit Fighter();
+
+	std::string toString();
 
 private:
-    int hp;
-    int armor;
-    int ballsNb;
-    float ballsSpeed;
-    int ballsSize;
-    int buttonSize;
-    int paddleSize;
-    std::string login;
+	int hp;
+	int armor;
+	int ballsNb;
+	float ballsSpeed;
+	int ballsSize;
+	int buttonSize;
+	int paddleSize;
+	std::string login;
 };
 
 #endif //CPPSERVER_FIGHTER_H

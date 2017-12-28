@@ -5,8 +5,8 @@
 
 #include "includes/Client.h"
 
-Client::Client(int socket) : sock(socket) {
-    combatInfos = new Fighter();
+Client::Client(int socket) {
+	sock = socket;
 }
 
 std::string Client::toString() {
@@ -14,6 +14,4 @@ std::string Client::toString() {
     return login;
 }
 
-Client::Client() {
-    combatInfos = new Fighter();
-}
+Client::Client() = default;
