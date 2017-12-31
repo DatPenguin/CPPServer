@@ -6,7 +6,7 @@
 
 using namespace std;
 
-vector<MMStruct> mmVector(MAX_CLIENTS);
+vector<MMStruct> mmVector(1);
 int mmi = 0;
 
 void run() {
@@ -36,7 +36,7 @@ void run() {
 		if (FD_ISSET(STDIN_FILENO, &rdfs))  // If something happens on standard input
 			break; // Stop process when typing on keyboard
 		else if (FD_ISSET(sock, &rdfs)) {   // New connection
-			SOCKADDR_IN csin = {0};
+			SOCKADDR_IN csin = {0, 0, 0, 0};
 			size_t sinsize = sizeof(csin);
 			int csock = accept(sock, (SOCKADDR *) &csin, (socklen_t *) &sinsize);
 			if (csock == SOCKET_ERROR) {
@@ -60,6 +60,7 @@ void run() {
 					Client client = clients[k];
 					buffer = read_client(client.sock);
 					if (buffer.empty()) {                       // A client disconnected
+						cout << "Client on socket " << client.sock << " disconnected" << endl;
 						closesocket(client.sock);
 						remove_client(clients, k, &actual);
 					} else if (startsWith(buffer, "BAUTH")) {
@@ -67,9 +68,11 @@ void run() {
 					} else if (startsWith(buffer, "BPING")) {
 						p_BPING(clients[k]);
 					} else if (startsWith(buffer, "BCLASSESR")) {
-						p_BCLASSESR(&clients[k], buffer);
+						p_BCLASSESR(&clients[k]);
+					} else if (startsWith(buffer, "BCLASSESC")) {
+						p_BCLASSESC(&clients[k], buffer);
 					} else if (startsWith(buffer, "BSPELLSR")) {
-						p_BSPELLSR(&clients[k], buffer);
+						p_BSPELLSR(&clients[k]);
 					} else if (startsWith(buffer, "BSPELLSC")) {
 						p_BSPELLSC(&clients[k], buffer);
 					} else if (startsWith(buffer, "BMAKE")) {
@@ -79,14 +82,14 @@ void run() {
 					} else if (startsWith(buffer, "BLOGOUT")) {
 						p_BLOGOUT(clients, k, &actual);
 					} else if (startsWith(buffer, "BFALL")) {
-						p_BFALL(clients[k]);
+						p_BFALL(&clients[k]);
 					} else if (buffer == "close") {
 						clear_clients(clients, actual);
 						end_connection(sock);
 						return;
 					} else if (buffer == "AUTH?") {
 						if (clients[k].is_auth)
-							send_message_to_client(clients[k], "AUTH");
+							send_message_to_client(clients[k], "AUTH," + clients[k].login);
 						else
 							send_message_to_client(clients[k], "NOT AUTH");
 					}
@@ -121,7 +124,7 @@ int init_connection() {
 		exit(errno);
 	}
 
-	SOCKADDR_IN sin = {0};
+	SOCKADDR_IN sin = {0, 0, 0, 0};
 
 	if (sock == INVALID_SOCKET) {   // if socket() returned -1
 		perror("socket()");

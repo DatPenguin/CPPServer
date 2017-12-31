@@ -22,11 +22,15 @@ void p_BAUTH(Client *client, std::string buffer);
 
 void p_BLOGIN(Client *client, std::string login, std::string pwd);
 
-void p_BCLASSESR(Client *client, std::string pseudo);
+void p_BCLASSESR(Client *client);
 
-void p_BCLASSESA(Client *client, std::string login);
+void p_BCLASSESA(Client *client);
 
-void p_BSPELLSR(Client *client, std::string className);
+void p_BCLASSESC(Client *client, std::string buffer);
+
+void p_BCLASSESACK(Client client);
+
+void p_BSPELLSR(Client *client);
 
 void p_BSPELLSA(Client *client, std::string selectedClass);
 
@@ -42,11 +46,11 @@ void p_BMATCH(Client p1, Client p2);
 
 void p_BFIGHT(Client client, std::string buffer);
 
-void p_BREF(Client client, Client p1, Client p2);
+void p_BREF(Client p1, Client p2);
 
-void p_BWIN(Client client);
+void p_BWIN(Client *client);
 
-void p_BLOSE(Client client);
+void p_BLOSE(Client *client);
 
 void p_BLOGOUT(Client *clients, int k, int *actual);
 
@@ -54,6 +58,6 @@ void p_BBYE(Client *clients, int k, int *actual);
 
 void p_BTIMEDOUT(Client client);
 
-void p_BFALL(Client client);
+void p_BFALL(Client *client);
 
 #endif //CPPSERVER_CLIENTIO_H

@@ -28,6 +28,7 @@ public:
     std::vector<Spell> spellsList;
     std::vector<Spell> selectedSpells;
     bool is_auth = false;
+	int elo;
 };
 
 #endif //CPPSERVER_PLAYER_H

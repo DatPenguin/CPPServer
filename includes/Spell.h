@@ -12,28 +12,29 @@
  * Every var initialized to 0 is an absolute value.
  */
 class Spell {
-    std::string spellName = "";     /// Name of the spell
-    int ballSpeed = 1;              /// Speed of the ball
-    int ballSpeed_o = 1;            /// Speed of the opponent's ball
-    int paddleSize = 1;             /// Size of the paddle
-    int paddleSize_o = 1;           /// Size of the opponent's paddle
-    int paddleSpeed = 1;            /// Movement speed of the paddle
-    int paddleSpeed_o = 1;          /// Movement speed of the opponent's paddle
-    int damages = 0;                /// Damages received
-    int damages_o = 0;              /// Damage dealt
-    int shield = 0;                 /// Shield received
-    int shield_o = 0;               /// Shield given to the opponent
-    int ball_multiplication = 0;    /// Added balls
-    int ball_multiplication_o = 0;  /// Added balls for the opponent
-
 public:
-    explicit Spell(std::string name);
 
-    const std::string &getSpellName() const;
+	std::string spellName = "";     /// Name of the spell
+	float ballSpeed = 1;            /// Speed of the ball
+	float ballSpeed_o = 1;          /// Speed of the opponent's ball
+	int paddleSize = 1;             /// Size of the paddle
+	int paddleSize_o = 1;           /// Size of the opponent's paddle
+	float paddleSpeed = 1;          /// Movement speed of the paddle
+	float paddleSpeed_o = 1;        /// Movement speed of the opponent's paddle
+	int damages = 0;                /// Damages received
+	int damages_o = 0;              /// Damage dealt
+	int shield = 0;                 /// Shield received
+	int shield_o = 0;               /// Shield given to the opponent
+	int ball_multiplication = 0;    /// Added balls
+	int ball_multiplication_o = 0;  /// Added balls for the opponent
 
-    void print();
+	explicit Spell(std::string name);
 
-    std::string toString();
+	const std::string &getSpellName() const;
+
+	void print();
+
+	std::string toString();
 };
 
 std::ostream &operator<<(std::ostream, Spell const &);

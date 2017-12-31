@@ -8,10 +8,6 @@
 
 using namespace std;
 
-Fighter::Fighter(std::string login) {
-    // TODO Requete BD pour peupler
-}
-
 Fighter::Fighter() {
     hp = 10;
     armor = 0;
@@ -20,10 +16,37 @@ Fighter::Fighter() {
     ballsSize = 1;
     buttonSize = 1;
     paddleSize = 1;
+	paddleSpeed = 1;
 }
 
 string Fighter::toString() {
 	stringstream ss;
 	ss << hp << ";" << armor << ";" << ballsNb << ";" << ballsSpeed << ";" + ballsSize << ";" << buttonSize + ";" << paddleSize;
 	return ss.str();
+}
+
+void Fighter::applySpell(Spell s) {
+	hp -= s.damages;
+	ballsSpeed *= s.ballSpeed;
+	ballsNb += s.ball_multiplication;
+	paddleSize *= s.paddleSize;
+	paddleSpeed *= s.paddleSpeed;
+	armor += s.shield;
+}
+
+void Fighter::applyOpponentsSpell(Spell s) {
+	hp -= s.damages_o;
+	ballsSpeed *= s.ballSpeed_o;
+	ballsNb += s.ball_multiplication_o;
+	paddleSize *= s.paddleSize_o;
+	paddleSpeed *= s.paddleSpeed_o;
+	armor += s.shield_o;
+}
+
+bool Fighter::isDead() {
+	return (hp <= 0);
+}
+
+void Fighter::fallen() {
+	hp--;
 }

@@ -108,14 +108,14 @@ void p_BLOGIN(Client *client, string login, string pwd) {
 	}
 }
 
-void p_BCLASSESR(Client *client, string buffer) {
-	vector<string> a = split(buffer, ',');
-
-	p_BCLASSESA(client, a[1]);
+void p_BCLASSESR(Client *client) {
+	if (!client->is_auth)
+		return;
+	p_BCLASSESA(client);
 }
 
-void p_BCLASSESA(Client *client, string login) {
-	string sql, classes = "BCLASSESA";
+void p_BCLASSESA(Client *client) {
+	string sql, classes = "BCLASSESA", login = client->login;
 
 	try {
 		connection c(CONNECTION_STRING);
@@ -142,12 +142,20 @@ void p_BCLASSESA(Client *client, string login) {
 	}
 }
 
-void p_BSPELLSR(Client *client, string buffer) {
-	vector<string> className = split(buffer, ',');
-	if (className.size() < 2)
-		return;
-	p_BSPELLSA(client, className[1]);
-	client->selectedClass = className[1];
+void p_BCLASSESC(Client *client, std::string buffer) {
+	vector<string> cl = split(buffer, ',');
+	if (cl.size() > 1) {
+		client->selectedClass = cl[1];
+		p_BCLASSESACK(*client);
+	}
+}
+
+void p_BCLASSESACK(Client client) {
+	send_message_to_client(client, "BCLASSESACK");
+}
+
+void p_BSPELLSR(Client *client) {
+	p_BSPELLSA(client, client->selectedClass);
 }
 
 void p_BSPELLSA(Client *client, string selectedClass) {
@@ -195,7 +203,7 @@ void p_BSPELLSACK(Client client) {
 }
 
 void p_BMAKE(Client *client) {
-	if (mmVector.back().c1 != nullptr && mmVector.back().c2 == nullptr) {    // Si la dernière MMStruct a une place libre
+	if (mmVector.back().c1 != nullptr && mmVector.back().c2 == nullptr && mmVector.back().c1->sock != client->sock) {    // Si la dernière MMStruct a une place libre
 		mmVector.back().c2 = client;        // On remplit cette place avec le client qui cherche une partie
 		client->mmIndex = mmVector.back().index;
 		p_BMATCH(*(mmVector.back().c1), *(mmVector.back().c2));
@@ -218,23 +226,44 @@ void p_BMATCH(Client p1, Client p2) {
 
 void p_BFIGHT(Client client, string buffer) {
 	vector<string> buf = split(buffer, ',');
-	if (buf.size() > 1) {
-		string spell = buf[1];
-		cout << "Used spell : " << Spell(spell).toString() << endl;
-	}
-} // TODO Revoir les arguments de la fonction
+	MMStruct *ms = &(mmVector[client.mmIndex]);
+	if (buf.size() <= 1)
+		return;
+	Spell s(buf[1]);
+	cout << "Used spell : " << s.toString() << endl;
 
-void p_BREF(Client client, Client p1, Client p2) {
-	send_message_to_client(client, p1.toString() + "," + p2.toString());
+	if (ms->c1->sock == client.sock) {
+		ms->c1->combatInfos.applySpell(s);
+		ms->c2->combatInfos.applyOpponentsSpell(s);
+	} else {
+		ms->c2->combatInfos.applySpell(s);
+		ms->c1->combatInfos.applyOpponentsSpell(s);
+	}
+
+	if (ms->c1->combatInfos.isDead()) {
+		p_BWIN(ms->c2);
+		p_BLOSE(ms->c1);
+	} else if (ms->c2->combatInfos.isDead()) {
+		p_BWIN(ms->c1);
+		p_BLOSE(ms->c2);
+	} else
+		p_BREF(*ms->c1, *ms->c2);
 }
 
-void p_BWIN(Client client) {
-	send_message_to_client(client, "BWIN");
-} // TODO Calculer le nouvel elo du joueur et lui envoyer
+void p_BREF(Client p1, Client p2) {
+	send_message_to_client(p1, "BREF," + p1.combatInfos.toString() + "," + p2.combatInfos.toString());
+	send_message_to_client(p2, "BREF," + p2.combatInfos.toString() + "," + p1.combatInfos.toString());
+}
 
-void p_BLOSE(Client client) {
-	send_message_to_client(client, "BLOSE");
-} // TODO Calculer le nouvel elo du joueur et lui envoyer
+void p_BWIN(Client *client) {
+	//send_message_to_client(*client, "BWIN," + ++(client->elo));
+	send_message_to_client(*client, "BWIN");
+}   // TODO Lorsque l'elo sera fait, décommenter la ligne
+
+void p_BLOSE(Client *client) {
+	//send_message_to_client(*client, "BLOSE," + --(client->elo));
+	send_message_to_client(*client, "BLOSE");
+}
 
 void p_BLOGOUT(Client *clients, int k, int *actual) {
 	p_BBYE(clients, k, actual);
@@ -250,6 +279,10 @@ void p_BTIMEDOUT(Client client) {
 	send_message_to_client(client, "BBYE");
 }
 
-void p_BFALL(Client client) {
-	send_message_to_client(client, "LOL T NUL");
-} // TODO Ajouter une fonction permettant de faire perdre un PV au joueur
+void p_BFALL(Client *client) {
+	client->combatInfos.fallen();
+
+	MMStruct *ms = &mmVector[client->mmIndex];
+
+	p_BREF(*ms->c1, *ms->c2);
+}
