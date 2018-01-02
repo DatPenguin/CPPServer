@@ -215,6 +215,11 @@ void p_BMAKE(Client *client) {
 	}
 }
 
+void p_BUNMAKE(Client *client) {
+	if (mmVector.back().c1 == client)
+		mmVector.pop_back();
+}
+
 void p_BWAIT(Client client) {
 	send_message_to_client(client, "BWAIT");
 }
@@ -225,6 +230,8 @@ void p_BMATCH(Client p1, Client p2) {
 }
 
 void p_BFIGHT(Client client, string buffer) {
+	if (client.mmIndex == -1)
+		return;
 	vector<string> buf = split(buffer, ',');
 	MMStruct *ms = &(mmVector[client.mmIndex]);
 	if (buf.size() <= 1)
@@ -243,9 +250,16 @@ void p_BFIGHT(Client client, string buffer) {
 	if (ms->c1->combatInfos.isDead()) {
 		p_BWIN(ms->c2);
 		p_BLOSE(ms->c1);
+		mmVector.erase(mmVector.begin() + ms->index);
+		ms->c1->mmIndex = -1;
+		ms->c2->mmIndex = -1;
+
 	} else if (ms->c2->combatInfos.isDead()) {
 		p_BWIN(ms->c1);
 		p_BLOSE(ms->c2);
+		mmVector.erase(mmVector.begin() + ms->index);
+		ms->c1->mmIndex = -1;
+		ms->c2->mmIndex = -1;
 	} else
 		p_BREF(*ms->c1, *ms->c2);
 }

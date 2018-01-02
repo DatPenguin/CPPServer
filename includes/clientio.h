@@ -40,6 +40,8 @@ void p_BSPELLSACK(Client client);
 
 void p_BMAKE(Client *client);
 
+void p_BUNMAKE(Client *client);
+
 void p_BWAIT(Client client);
 
 void p_BMATCH(Client p1, Client p2);

@@ -77,6 +77,8 @@ void run() {
 						p_BSPELLSC(&clients[k], buffer);
 					} else if (startsWith(buffer, "BMAKE")) {
 						p_BMAKE(&clients[k]);
+					} else if (startsWith(buffer, "BUNMAKE")) {
+						p_BUNMAKE(&clients[k]);
 					} else if (startsWith(buffer, "BFIGHT")) {
 						p_BFIGHT(clients[k], buffer);
 					} else if (startsWith(buffer, "BLOGOUT")) {

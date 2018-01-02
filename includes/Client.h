@@ -17,8 +17,6 @@ public:
 
     explicit Client();
 
-    std::string toString();
-
     int sock;
 	int mmIndex;
     std::string login;

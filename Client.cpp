@@ -5,13 +5,10 @@
 
 #include "includes/Client.h"
 
+using namespace std;
+
 Client::Client(int socket) {
 	sock = socket;
-}
-
-std::string Client::toString() {
-    // TODO Faire un vrai toString()
-    return login;
 }
 
 Client::Client() = default;
