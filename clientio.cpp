@@ -64,10 +64,8 @@ void p_BPONG(Client client) {
 void p_BAUTH(Client *client, string buffer) {
 	string login, pwd;
 	vector<string> v = split(buffer, ',');
-	if (v.size() < 3) {
-		send_message_to_client(*client, "T'es qu'une grosse merde");
+	if (v.size() < 3)
 		return;
-	}
 	login = v[1];
 	pwd = v[2];
 
@@ -195,7 +193,8 @@ void p_BSPELLSC(Client *client, string chosenList) {
 		if (!s.getSpellName().empty())
 			client->spellsList.push_back(s);
 	}
-	p_BSPELLSACK(*client);
+	if (!client->spellsList.empty())
+		p_BSPELLSACK(*client);
 }
 
 void p_BSPELLSACK(Client client) {
@@ -289,14 +288,63 @@ void p_BBYE(Client *clients, int k, int *actual) {
 	remove_client(clients, k, actual);
 }
 
-void p_BTIMEDOUT(Client client) {
-	send_message_to_client(client, "BBYE");
-}
-
 void p_BFALL(Client *client) {
 	client->combatInfos.fallen();
 
 	MMStruct *ms = &mmVector[client->mmIndex];
 
 	p_BREF(*ms->c1, *ms->c2);
+}
+
+void client_disconnected(Client *clients, int k, int actual) {
+	MMStruct *ms = &mmVector[clients[k].mmIndex];
+
+	if (ms->c1 != nullptr && ms->c2 != nullptr) {   // Si le combat est en cours
+		if (ms->c1->sock == clients[k].sock) {      // On fait perdre le client qui s'est déconnecté
+			p_BLOSE(ms->c1);
+			p_BWIN(ms->c2);
+		} else {
+			p_BLOSE(ms->c2);
+			p_BWIN(ms->c1);
+		}
+	} else if (ms->c1->sock == clients[k].sock) {   // Si le client est en file d'attente, on l'enlève du matchmaking
+		p_BUNMAKE(&clients[k]);
+	}
+
+	closesocket(clients->sock);
+	remove_client(clients, k, &actual);
+}
+
+void p_BNAME(Client *client, string buffer) {
+	if (!client->is_auth) {
+		cerr << "BNAME : Client not AUTH" << endl;
+		send_message_to_client(*client, "NOT AUTH");
+		return;
+	}
+
+	vector<string> buf = split(buffer, ',');
+	if (buf.size() <= 1)
+		return;
+
+	string sql, name = buf[1];
+
+	try {
+		connection c(CONNECTION_STRING);
+		if (!c.is_open())
+			cerr << "Can't open the database" << endl;
+
+		sql = "UPDATE player_info SET p_name='" + name + "' WHERE login LIKE '" + client->login + "'";
+		nontransaction n(c);
+		n.exec(sql);
+
+	} catch (const exception &e) {
+		cerr << e.what() << endl;
+		return;
+	}
+
+	p_BNAMEACK(*client);
+}
+
+void p_BNAMEACK(Client client) {
+	send_message_to_client(client, "BNAMEACK");
 }

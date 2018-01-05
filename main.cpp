@@ -8,6 +8,7 @@ using namespace std;
 
 vector<MMStruct> mmVector(1);
 int mmi = 0;
+int bport = 5000;
 
 void run() {
 	SOCKET sock = init_connection();
@@ -61,8 +62,7 @@ void run() {
 					buffer = read_client(client.sock);
 					if (buffer.empty()) {                       // A client disconnected
 						cout << "Client on socket " << client.sock << " disconnected" << endl;
-						closesocket(client.sock);
-						remove_client(clients, k, &actual);
+						client_disconnected(clients, k, actual);
 					} else if (startsWith(buffer, "BAUTH")) {
 						p_BAUTH(&clients[k], buffer);
 					} else if (startsWith(buffer, "BPING")) {
@@ -89,6 +89,8 @@ void run() {
 						clear_clients(clients, actual);
 						end_connection(sock);
 						return;
+					} else if (startsWith(buffer, "BNAME")) {
+						p_BNAME(&clients[k], buffer);
 					} else if (buffer == "AUTH?") {
 						if (clients[k].is_auth)
 							send_message_to_client(clients[k], "AUTH," + clients[k].login);
@@ -134,7 +136,7 @@ int init_connection() {
 	}
 
 	sin.sin_addr.s_addr = htonl(INADDR_ANY);
-	sin.sin_port = htons(PORT);
+	sin.sin_port = htons((uint16_t) bport);
 	sin.sin_family = AF_INET;
 
 	if (bind(sock, (SOCKADDR *) &sin, sizeof sin) == SOCKET_ERROR) {
@@ -154,10 +156,10 @@ void end_connection(int sock) {
 	closesocket(sock);
 }
 
-int main() {
-	cout << "Server started... Listening on port " << PORT << "..." << endl;
+int main(int argc, char **argv) {
+	if (argc > 1)
+		bport = (int) strtol(argv[1], NULL, 10);
+	cout << "Server started... Listening on port " << bport << " ..." << endl;
 	run();
-	/*Spell s = Spell("quitte ou double");
-	s.print();*/
 	return EXIT_SUCCESS;
 }

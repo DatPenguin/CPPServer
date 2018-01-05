@@ -18,7 +18,7 @@ typedef struct sockaddr SOCKADDR;
 
 #define DEBUG 0
 
-#define PORT        5000
+//#define PORT        5000
 #define MAX_CLIENTS    100
 
 #define BUF_SIZE    1024

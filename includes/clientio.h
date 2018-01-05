@@ -58,8 +58,12 @@ void p_BLOGOUT(Client *clients, int k, int *actual);
 
 void p_BBYE(Client *clients, int k, int *actual);
 
-void p_BTIMEDOUT(Client client);
-
 void p_BFALL(Client *client);
+
+void p_BNAME(Client *client, std::string buffer);
+
+void p_BNAMEACK(Client client);
+
+void client_disconnected(Client *clients, int k, int actual);
 
 #endif //CPPSERVER_CLIENTIO_H
