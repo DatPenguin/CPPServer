@@ -224,8 +224,10 @@ void p_BWAIT(Client client) {
 }
 
 void p_BMATCH(Client p1, Client p2) {
-	send_message_to_client(p1, "BMATCH," + p1.combatInfos.toString() + "," + p2.combatInfos.toString());
-	send_message_to_client(p2, "BMATCH," + p2.combatInfos.toString() + "," + p1.combatInfos.toString());
+	send_message_to_client(p1, "BMATCH," + p1.combatInfos.toString() + ";" + p1.selectedClass + ";" + p1.login + "," +
+	                           p2.combatInfos.toString() + ";" + p2.selectedClass + ";" + p2.login);
+	send_message_to_client(p2, "BMATCH," + p2.combatInfos.toString() + ";" + p2.selectedClass + ";" + p2.login + "," +
+	                           p1.combatInfos.toString() + ";" + p1.selectedClass + ";" + p1.login);
 }
 
 void p_BFIGHT(Client client, string buffer) {
@@ -296,25 +298,6 @@ void p_BFALL(Client *client) {
 	p_BREF(*ms->c1, *ms->c2);
 }
 
-void client_disconnected(Client *clients, int k, int actual) {
-	MMStruct *ms = &mmVector[clients[k].mmIndex];
-
-	if (ms->c1 != nullptr && ms->c2 != nullptr) {   // Si le combat est en cours
-		if (ms->c1->sock == clients[k].sock) {      // On fait perdre le client qui s'est déconnecté
-			p_BLOSE(ms->c1);
-			p_BWIN(ms->c2);
-		} else {
-			p_BLOSE(ms->c2);
-			p_BWIN(ms->c1);
-		}
-	} else if (ms->c1->sock == clients[k].sock) {   // Si le client est en file d'attente, on l'enlève du matchmaking
-		p_BUNMAKE(&clients[k]);
-	}
-
-	closesocket(clients->sock);
-	remove_client(clients, k, &actual);
-}
-
 void p_BNAME(Client *client, string buffer) {
 	if (!client->is_auth) {
 		cerr << "BNAME : Client not AUTH" << endl;
@@ -347,4 +330,19 @@ void p_BNAME(Client *client, string buffer) {
 
 void p_BNAMEACK(Client client) {
 	send_message_to_client(client, "BNAMEACK");
+}
+
+void client_disconnected(Client *clients, int k, int actual) {
+	MMStruct *ms = &mmVector[clients[k].mmIndex];
+
+	if (ms->c1 != nullptr && ms->c2 != nullptr) {   // Si le combat est en cours
+		if (ms->c1->sock == clients[k].sock)        // On fait perdre le client qui s'est déconnecté
+			p_BWIN(ms->c2);
+		else
+			p_BWIN(ms->c1);
+	} else if (ms->c1->sock == clients[k].sock)   // Si le client est en file d'attente, on l'enlève du matchmaking
+		p_BUNMAKE(&clients[k]);
+
+	closesocket(clients->sock);
+	remove_client(clients, k, &actual);
 }

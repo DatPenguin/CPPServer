@@ -21,7 +21,8 @@ Fighter::Fighter() {
 
 string Fighter::toString() {
 	stringstream ss;
-	ss << hp << ";" << armor << ";" << ballsNb << ";" << ballsSpeed << ";" + ballsSize << ";" << buttonSize + ";" << paddleSize;
+	ss << hp << ";" << armor << ";" << ballsNb << ";" << ballsSpeed << ";" << ballsSize << ";" << buttonSize << ";"
+	   << paddleSize;
 	return ss.str();
 }
 
