@@ -23,8 +23,8 @@ Spell::Spell(const string name) {
 			spellName = ci[0].as<string>();
 			ballSpeed = ci[1].as<float>();
 			ballSpeed_o = ci[2].as<float>();
-			paddleSize = ci[3].as<int>();
-			paddleSize_o = ci[4].as<int>();
+            paddleSize = ci[3].as<float>();
+            paddleSize_o = ci[4].as<float>();
 			paddleSpeed = ci[5].as<float>();
 			paddleSpeed_o = ci[6].as<float>();
 			damages = ci[7].as<int>();

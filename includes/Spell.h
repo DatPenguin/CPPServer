@@ -17,8 +17,8 @@ public:
 	std::string spellName = "";     /// Name of the spell
 	float ballSpeed = 1;            /// Speed of the ball
 	float ballSpeed_o = 1;          /// Speed of the opponent's ball
-	int paddleSize = 1;             /// Size of the paddle
-	int paddleSize_o = 1;           /// Size of the opponent's paddle
+    float paddleSize = 1;             /// Size of the paddle
+    float paddleSize_o = 1;           /// Size of the opponent's paddle
 	float paddleSpeed = 1;          /// Movement speed of the paddle
 	float paddleSpeed_o = 1;        /// Movement speed of the opponent's paddle
 	int damages = 0;                /// Damages received
