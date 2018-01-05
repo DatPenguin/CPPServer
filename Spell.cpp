@@ -1,4 +1,5 @@
 #include "includes/Spell.h"
+#include "includes/server.h"
 
 using namespace std;
 using namespace pqxx;
@@ -16,9 +17,10 @@ Spell::Spell(const string name) {
 
 		for (result::const_iterator ci = r.begin(); ci != r.end(); ++ci) {
 			if (ci[0].as<string>() != name) {
-				cerr << "Bad spell name : " << name << " ; " << ci[0].as<string>() << endl;
+				if (DEBUG)
+					cerr << "Bad spell name : " << name << " ; " << ci[0].as<string>() << endl;
 				continue;
-			} else
+			} else if (DEBUG)
 				cout << "Added Spell : " << name << endl;
 			spellName = ci[0].as<string>();
 			ballSpeed = ci[1].as<float>();

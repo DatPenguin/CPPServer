@@ -16,6 +16,8 @@ typedef struct sockaddr_in SOCKADDR_IN;
 typedef struct sockaddr SOCKADDR;
 //typedef struct in_addr IN_ADDR;
 
+#define DEBUG 0
+
 #define PORT        5000
 #define MAX_CLIENTS    100
 
