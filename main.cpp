@@ -60,9 +60,11 @@ void run() {
 				if (FD_ISSET(clients[k].sock, &rdfs)) { // A client is talking
 					Client client = clients[k];
 					buffer = read_client(client.sock);
+					if (buffer[buffer.length() - 1] == '\n')
+						buffer[buffer.length() - 1] = '\0';
 					if (buffer.empty()) {                       // A client disconnected
 						cout << "Client on socket " << client.sock << " disconnected" << endl;
-						client_disconnected(clients, k, actual);
+						client_disconnected(clients, k, &actual);
 					} else if (startsWith(buffer, "BAUTH")) {
 						p_BAUTH(&clients[k], buffer);
 					} else if (startsWith(buffer, "BPING")) {

@@ -27,10 +27,13 @@ public:
 	int shield_o = 0;               /// Shield given to the opponent
 	int ball_multiplication = 0;    /// Added balls
 	int ball_multiplication_o = 0;  /// Added balls for the opponent
+	bool badSpell = true;
 
 	explicit Spell(std::string name);
 
 	const std::string &getSpellName() const;
+
+	bool isBadSpell();
 
 	void print();
 

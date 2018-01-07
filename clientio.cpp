@@ -206,17 +206,22 @@ void p_BMAKE(Client *client) {
 		mmVector.back().c2 = client;        // On remplit cette place avec le client qui cherche une partie
 		client->mmIndex = mmVector.back().index;
 		p_BMATCH(*(mmVector.back().c1), *(mmVector.back().c2));
-	} else {
+	} else if (client->mmIndex == -1) {
 		MMStruct ms = {client, nullptr, ++mmi}; // Sinon, on crée une nouvelle MMStruct et on y ajoute le client
 		mmVector.push_back(ms);                 // On l'ajoute au vector
 		client->mmIndex = mmVector.back().index;
 		p_BWAIT(*client);                    // Et on envoie un BWAIT au client
-	}
+	} else if (mmVector[client->mmIndex].c1 != nullptr && mmVector[client->mmIndex].c2 != nullptr)
+		return;
+	else
+		p_BWAIT(*client);
 }
 
 void p_BUNMAKE(Client *client) {
-	if (mmVector.back().c1 == client)
+	if (mmVector.back().c1 == client) {
 		mmVector.pop_back();
+		mmi--;
+	}
 }
 
 void p_BWAIT(Client client) {
@@ -231,13 +236,16 @@ void p_BMATCH(Client p1, Client p2) {
 }
 
 void p_BFIGHT(Client client, string buffer) {
-	if (client.mmIndex == -1)
+	if (!client.isInMatchMaking())
 		return;
+
 	vector<string> buf = split(buffer, ',');
 	MMStruct *ms = &(mmVector[client.mmIndex]);
 	if (buf.size() <= 1)
 		return;
 	Spell s(buf[1]);
+	if (s.isBadSpell())
+		return;
 	cout << "Used spell : " << s.toString() << endl;
 
 	if (ms->c1->sock == client.sock) {
@@ -252,15 +260,27 @@ void p_BFIGHT(Client client, string buffer) {
 		p_BWIN(ms->c2);
 		p_BLOSE(ms->c1);
 		mmVector.erase(mmVector.begin() + ms->index);
+
+		ms->c1->combatInfos.resetFighter();
+		ms->c2->combatInfos.resetFighter();
+
 		ms->c1->mmIndex = -1;
 		ms->c2->mmIndex = -1;
+
+		mmi--;
 
 	} else if (ms->c2->combatInfos.isDead()) {
 		p_BWIN(ms->c1);
 		p_BLOSE(ms->c2);
 		mmVector.erase(mmVector.begin() + ms->index);
+
+		ms->c1->combatInfos.resetFighter();
+		ms->c2->combatInfos.resetFighter();
+
 		ms->c1->mmIndex = -1;
 		ms->c2->mmIndex = -1;
+
+		mmi--;
 	} else
 		p_BREF(*ms->c1, *ms->c2);
 }
@@ -291,11 +311,36 @@ void p_BBYE(Client *clients, int k, int *actual) {
 }
 
 void p_BFALL(Client *client) {
+	if (!client->isInMatchMaking())
+		return;
+
 	client->combatInfos.fallen();
 
 	MMStruct *ms = &mmVector[client->mmIndex];
 
-	p_BREF(*ms->c1, *ms->c2);
+	if (ms->c1->combatInfos.isDead()) {
+		p_BWIN(ms->c2);
+		p_BLOSE(ms->c1);
+		mmVector.erase(mmVector.begin() + ms->index);
+
+		ms->c1->combatInfos.resetFighter();
+		ms->c2->combatInfos.resetFighter();
+
+		ms->c1->mmIndex = -1;
+		ms->c2->mmIndex = -1;
+
+	} else if (ms->c2->combatInfos.isDead()) {
+		p_BWIN(ms->c1);
+		p_BLOSE(ms->c2);
+		mmVector.erase(mmVector.begin() + ms->index);
+
+		ms->c1->combatInfos.resetFighter();
+		ms->c2->combatInfos.resetFighter();
+
+		ms->c1->mmIndex = -1;
+		ms->c2->mmIndex = -1;
+	} else
+		p_BREF(*ms->c1, *ms->c2);
 }
 
 void p_BNAME(Client *client, string buffer) {
@@ -332,17 +377,18 @@ void p_BNAMEACK(Client client) {
 	send_message_to_client(client, "BNAMEACK");
 }
 
-void client_disconnected(Client *clients, int k, int actual) {
+void client_disconnected(Client *clients, int k, int *actual) {
 	MMStruct *ms = &mmVector[clients[k].mmIndex];
 
-	if (ms->c1 != nullptr && ms->c2 != nullptr) {   // Si le combat est en cours
-		if (ms->c1->sock == clients[k].sock)        // On fait perdre le client qui s'est déconnecté
-			p_BWIN(ms->c2);
-		else
-			p_BWIN(ms->c1);
-	} else if (ms->c1->sock == clients[k].sock)   // Si le client est en file d'attente, on l'enlève du matchmaking
-		p_BUNMAKE(&clients[k]);
-
-	closesocket(clients->sock);
-	remove_client(clients, k, &actual);
+	if (clients[k].isInMatchMaking()) {
+		if (ms->c1 != nullptr && ms->c2 != nullptr) {   // Si le combat est en cours
+			if (ms->c1->sock == clients[k].sock)        // On fait perdre le client qui s'est déconnecté
+				p_BWIN(ms->c2);
+			else
+				p_BWIN(ms->c1);
+		} else if (ms->c1->sock == clients[k].sock)   // Si le client est en file d'attente, on l'enlève du matchmaking
+			p_BUNMAKE(&clients[k]);
+	}
+	closesocket(clients[k].sock);
+	remove_client(clients, k, actual);
 }

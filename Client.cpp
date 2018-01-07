@@ -11,4 +11,8 @@ Client::Client(int socket) {
 	sock = socket;
 }
 
+bool Client::isInMatchMaking() {
+	return mmIndex != -1;
+}
+
 Client::Client() = default;

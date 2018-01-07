@@ -64,6 +64,6 @@ void p_BNAME(Client *client, std::string buffer);
 
 void p_BNAMEACK(Client client);
 
-void client_disconnected(Client *clients, int k, int actual);
+void client_disconnected(Client *clients, int k, int *actual);
 
 #endif //CPPSERVER_CLIENTIO_H

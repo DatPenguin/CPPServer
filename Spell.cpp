@@ -34,6 +34,7 @@ Spell::Spell(const string name) {
 			shield = ci[9].as<int>();
 			ball_multiplication = ci[10].as<int>();
 			ball_multiplication_o = ci[11].as<int>();
+			badSpell = false;
 		}
 
 	} catch (const exception &e) {
@@ -57,4 +58,8 @@ std::string Spell::toString() {
 	   << paddleSpeed << ";" << paddleSpeed_o << ";" << damages << ";" << damages_o << ";" << shield << ";"
 	   << ball_multiplication << ";" << ball_multiplication_o << endl;
 	return ss.str();
+}
+
+bool Spell::isBadSpell() {
+	return badSpell;
 }

@@ -17,8 +17,10 @@ public:
 
     explicit Client();
 
+	bool isInMatchMaking();
+
     int sock;
-	int mmIndex;
+	int mmIndex = -1;
     std::string login;
     std::vector<std::string> heroList;
 	std::string selectedClass;
@@ -26,7 +28,6 @@ public:
     std::vector<Spell> spellsList;
     std::vector<Spell> selectedSpells;
     bool is_auth = false;
-	int elo;
 };
 
 #endif //CPPSERVER_PLAYER_H

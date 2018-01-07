@@ -27,21 +27,29 @@ string Fighter::toString() {
 }
 
 void Fighter::applySpell(Spell s) {
-	hp -= s.damages;
+	getDamage(s.damages);
 	ballsSpeed *= s.ballSpeed;
 	ballsNb += s.ball_multiplication;
 	paddleSize *= s.paddleSize;
 	paddleSpeed *= s.paddleSpeed;
-	armor += s.shield;
+
+	if (armor + s.shield >= 3)
+		armor = 3;
+	else
+		armor += s.shield;
 }
 
 void Fighter::applyOpponentsSpell(Spell s) {
-	hp -= s.damages_o;
+	getDamage(s.damages_o);
 	ballsSpeed *= s.ballSpeed_o;
 	ballsNb += s.ball_multiplication_o;
 	paddleSize *= s.paddleSize_o;
 	paddleSpeed *= s.paddleSpeed_o;
-	armor += s.shield_o;
+
+	if (armor + s.shield_o >= 3)
+		armor = 3;
+	else
+		armor += s.shield_o;
 }
 
 bool Fighter::isDead() {
@@ -49,5 +57,27 @@ bool Fighter::isDead() {
 }
 
 void Fighter::fallen() {
-	hp--;
+	getDamage(1);
+}
+
+void Fighter::resetFighter() {
+	hp = 10;
+	armor = 0;
+	ballsNb = 1;
+	ballsSpeed = 1;
+	ballsSize = 1;
+	buttonSize = 1;
+	paddleSize = 1;
+	paddleSpeed = 1;
+}
+
+void Fighter::getDamage(int dmg) {
+	if (armor >= dmg)
+		armor -= dmg;
+	else if (armor > 0) {
+		int tmp_dmg = dmg - armor;
+		armor = 0;
+		hp -= tmp_dmg;
+	} else
+		hp -= dmg;
 }

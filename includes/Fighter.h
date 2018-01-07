@@ -24,6 +24,10 @@ public:
 
 	void fallen();
 
+	void resetFighter();
+
+	void getDamage(int dmg);
+
 private:
 	int hp;
 	int armor;
