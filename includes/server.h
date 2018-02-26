@@ -24,15 +24,22 @@ typedef struct sockaddr SOCKADDR;
 #define BUF_SIZE    1024
 
 #include "brickest.h"
+#include "QClient.h"
 
 void run();
 
 int init_connection();
 
+int init_query_connection();
+
 void end_connection(int sock);
 
 void remove_client(Client *clients, int to_remove, int *actual);
 
+void remove_qclient(QClient *clients, int to_remove, int *actual);
+
 void clear_clients(Client *clients, int actual);
+
+void clear_clients(QClient *clients, int actual);
 
 #endif /* guard */

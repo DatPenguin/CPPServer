@@ -15,6 +15,12 @@ void send_message_to_client(Client client, string buffer) {
 
 }
 
+void send_message_to_client(QClient client, string buffer) {
+    write_client(client.sock, buffer);
+    cout << "Sent " << buffer << " to socket " << client.sock << endl;
+
+}
+
 void send_message_to_client(Client *client, string buffer) {
     write_client(client->sock, buffer);
     cout << "Sent " << buffer << " to socket " << client->sock << endl;
@@ -392,4 +398,9 @@ void client_disconnected(Client *clients, int k, int *actual) {
     }
     closesocket(clients[k].sock);
     remove_client(clients, k, actual);
+}
+
+void qclient_disconnected(QClient *clients, int k, int *actual) {
+    closesocket(clients[k].sock);
+    remove_qclient(clients, k, actual);
 }

@@ -4,6 +4,7 @@
 #include "server.h"
 #include "util.h"
 #include "Client.h"
+#include "QClient.h"
 #include <pqxx/pqxx>
 
 std::string read_client(SOCKET sock);
@@ -11,6 +12,8 @@ std::string read_client(SOCKET sock);
 void write_client(SOCKET sock, std::string buffer);
 
 void send_message_to_client(Client client, std::string buffer);
+
+void send_message_to_client(QClient client, std::string buffer);
 
 void send_message_to_client(Client *client, std::string buffer);
 
@@ -65,5 +68,7 @@ void p_BNAME(Client *client, std::string buffer);
 void p_BNAMEACK(Client client);
 
 void client_disconnected(Client *clients, int k, int *actual);
+
+void qclient_disconnected(QClient *clients, int k, int *actual);
 
 #endif //CPPSERVER_CLIENTIO_H
