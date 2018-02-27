@@ -17,13 +17,13 @@ public:
 
     explicit Client();
 
-	bool isInMatchMaking();
+    bool isInMatchMaking();
 
     int sock;
-	int mmIndex = -1;
+    int mmIndex = -1;
     std::string login;
     std::vector<std::string> heroList;
-	std::string selectedClass;
+    std::string selectedClass;
     Fighter combatInfos;
     std::vector<Spell> spellsList;
     std::vector<Spell> selectedSpells;

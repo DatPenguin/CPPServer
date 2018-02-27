@@ -7,6 +7,7 @@
 #include <arpa/inet.h>
 #include <unistd.h> /* close */
 #include <netdb.h> /* gethostbyname */
+#include <mutex>
 
 #define INVALID_SOCKET (-1)
 #define SOCKET_ERROR (-1)
@@ -25,6 +26,7 @@ typedef struct sockaddr SOCKADDR;
 
 #include "brickest.h"
 #include "QClient.h"
+#include "Stats.h"
 
 void run();
 

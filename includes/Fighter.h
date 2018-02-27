@@ -12,32 +12,32 @@
 
 class Fighter {
 public:
-	explicit Fighter();
+    explicit Fighter();
 
-	std::string toString();
+    std::string toString();
 
-	void applySpell(Spell s);
+    void applySpell(Spell s);
 
-	void applyOpponentsSpell(Spell s);
+    void applyOpponentsSpell(Spell s);
 
-	bool isDead();
+    bool isDead();
 
-	void fallen();
+    void fallen();
 
-	void resetFighter();
+    void resetFighter();
 
-	void getDamage(int dmg);
+    void getDamage(int dmg);
 
 private:
-	int hp;
-	int armor;
-	int ballsNb;
-	float ballsSpeed;
-	int ballsSize;
-	int buttonSize;
-	int paddleSize;
-	int paddleSpeed;
-	std::string login;
+    int hp;
+    int armor;
+    int ballsNb;
+    float ballsSpeed;
+    int ballsSize;
+    int buttonSize;
+    int paddleSize;
+    int paddleSpeed;
+    std::string login;
 };
 
 #endif //CPPSERVER_FIGHTER_H

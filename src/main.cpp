@@ -1,16 +1,22 @@
 #include <iostream>
-#include <cstring>
 #include <thread>
-#include "../includes/server.h"
+#include <mutex>
+#include "../includes/engine.h"
 #include "../includes/util.h"
 #include "../includes/clientio.h"
+#include "../includes/Stats.h"
 
 using namespace std;
+
+mutex stats_mutex;
+mutex db_mutex;
 
 vector<MMStruct> mmVector(1);
 int mmi = 0;
 int bport = 5000;
 int qport = 4000;
+
+Stats qStats;
 
 void run() {
     cout << "Main Server started... Listening on port " << bport << endl;  // Prints the listening port
@@ -57,6 +63,10 @@ void run() {
             c.login = buffer;
             clients[actual] = c;
             actual++;
+            stats_mutex.lock();
+            qStats.onlinePlayers++;
+            qStats.totalPlayers++;
+            stats_mutex.unlock();
         } else {
             int k = 0;
             for (k = 0; k < actual; k++) {
@@ -156,6 +166,9 @@ void query() {
             c.sock = csock;
             clients[actual] = c;
             actual++;
+            stats_mutex.lock();
+            qStats.onlineQueries++;
+            stats_mutex.unlock();
         } else {
             int k = 0;
             for (k = 0; k < actual; k++) {
@@ -169,6 +182,10 @@ void query() {
                         qclient_disconnected(clients, k, &actual);
                     } else if (startsWith(buffer, "bonjour")) {
                         send_message_to_client(client, "cc sava ?");
+                    } else if (buffer == "close") {
+                        clear_clients(clients, actual);
+                        end_connection(sock);
+                        return;
                     }
                     break;
                 }
@@ -180,105 +197,11 @@ void query() {
     end_connection(sock);
 }
 
-void clear_clients(Client *clients, int actual) {
-    int i = 0;
-    for (i = 0; i < actual; i++)
-        closesocket(clients[i].sock);
-}
-
-void clear_clients(QClient *clients, int actual) {
-    int i = 0;
-    for (i = 0; i < actual; i++)
-        closesocket(clients[i].sock);
-}
-
-void remove_client(Client *clients, int to_remove, int *actual) {
-    memmove(clients + to_remove, clients + to_remove + 1,
-            (*actual - to_remove - 1) * sizeof(Client));  // We remove the client from the array
-    (*actual)--;    // Reducing the number of clients
-}
-
-void remove_qclient(QClient *clients, int to_remove, int *actual) {
-    memmove(clients + to_remove, clients + to_remove + 1,
-            (*actual - to_remove - 1) * sizeof(Client));  // We remove the client from the array
-    (*actual)--;    // Reducing the number of clients
-}
-
-int init_connection() {
-    int enable = 1;
-
-    SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);  // Initializing the socket : AF_INET = IPv4, SOCK_STREAM : TCP
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-        perror("setsockopt(SO_REUSEADDR");
-        exit(errno);
-    }
-
-    SOCKADDR_IN sin = {0, 0, 0, 0};
-
-    if (sock == INVALID_SOCKET) {   // if socket() returned -1
-        perror("socket()");
-        exit(errno);
-    }
-
-    sin.sin_addr.s_addr = htonl(INADDR_ANY);
-    sin.sin_port = htons((uint16_t) bport);
-    sin.sin_family = AF_INET;
-
-    if (bind(sock, (SOCKADDR *) &sin, sizeof sin) == SOCKET_ERROR) {
-        perror("bind()");
-        exit(errno);
-    }
-
-    if (listen(sock, MAX_CLIENTS) == SOCKET_ERROR) {
-        perror("listen()");
-        exit(errno);
-    }
-
-    return sock;
-}
-
-int init_query_connection() {
-    int enable = 1;
-
-    SOCKET sock = socket(AF_INET, SOCK_STREAM, 0);  // Initializing the socket : AF_INET = IPv4, SOCK_STREAM : TCP
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-        perror("setsockopt(SO_REUSEADDR");
-        exit(errno);
-    }
-
-    SOCKADDR_IN sin = {0, 0, 0, 0};
-
-    if (sock == INVALID_SOCKET) {   // if socket() returned -1
-        perror("socket()");
-        exit(errno);
-    }
-
-    sin.sin_addr.s_addr = htonl(INADDR_ANY);
-    sin.sin_port = htons((uint16_t) qport);
-    sin.sin_family = AF_INET;
-
-    if (bind(sock, (SOCKADDR *) &sin, sizeof sin) == SOCKET_ERROR) {
-        perror("bind()");
-        exit(errno);
-    }
-
-    if (listen(sock, MAX_CLIENTS) == SOCKET_ERROR) {
-        perror("listen()");
-        exit(errno);
-    }
-
-    return sock;
-}
-
-void end_connection(int sock) {
-    closesocket(sock);
-}
-
 int main(int argc, char **argv) {
     if (argc > 1)   // If an argument is passed
         bport = (int) strtol(argv[1], nullptr, 10);    // The number given as an argument becomes the listening port of the main server
-    thread t1(query);
+    thread qThread(query);   // Creates the thread for the query server and starts it
     run();  // Starts the main server
-    cout << "test" << endl;
+    qThread.join();  // Joins the query thread so the program doesn't stop while at least one of the servers is running
     return EXIT_SUCCESS;
 }

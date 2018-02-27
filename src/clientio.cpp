@@ -8,6 +8,9 @@ using namespace pqxx;
 
 extern vector<MMStruct> mmVector;
 extern int mmi;
+extern mutex stats_mutex;
+extern mutex db_mutex;
+extern Stats qStats;
 
 void send_message_to_client(Client client, string buffer) {
     write_client(client.sock, buffer);
@@ -57,6 +60,27 @@ string read_client(SOCKET sock) {
     return out;
 }
 
+void client_disconnected(Client *clients, int k, int *actual) {
+    MMStruct *ms = &mmVector[clients[k].mmIndex];
+
+    if (clients[k].isInMatchMaking()) {
+        if (ms->c1 != nullptr && ms->c2 != nullptr) {   // Si le combat est en cours
+            if (ms->c1->sock == clients[k].sock)        // On fait perdre le client qui s'est déconnecté
+                p_BWIN(ms->c2);
+            else
+                p_BWIN(ms->c1);
+        } else if (ms->c1->sock == clients[k].sock)   // Si le client est en file d'attente, on l'enlève du matchmaking
+            p_BUNMAKE(&clients[k]);
+    }
+    closesocket(clients[k].sock);
+    remove_client(clients, k, actual);
+}
+
+void qclient_disconnected(QClient *clients, int k, int *actual) {
+    closesocket(clients[k].sock);
+    remove_qclient(clients, k, actual);
+}
+
 /// Protocol
 
 void p_BPING(Client client) {
@@ -81,6 +105,8 @@ void p_BAUTH(Client *client, string buffer) {
 void p_BLOGIN(Client *client, string login, string pwd) {
     string db_pwd, sql;
 
+    db_mutex.lock();
+
     try {
         connection c(CONNECTION_STRING);
         if (!c.is_open())
@@ -92,6 +118,7 @@ void p_BLOGIN(Client *client, string login, string pwd) {
 
         if (r.size() != 1) {
             send_message_to_client(*client, "BLOGIN,2");
+            db_mutex.unlock();
             return;
         }
 
@@ -100,6 +127,7 @@ void p_BLOGIN(Client *client, string login, string pwd) {
 
         if (db_pwd != pwd) {
             send_message_to_client(*client, "BLOGIN,1");
+            db_mutex.unlock();
             return;
         }
 
@@ -110,6 +138,8 @@ void p_BLOGIN(Client *client, string login, string pwd) {
     } catch (const exception &e) {
         cerr << e.what() << endl;
     }
+
+    db_mutex.unlock();
 }
 
 void p_BCLASSESR(Client *client) {
@@ -120,6 +150,8 @@ void p_BCLASSESR(Client *client) {
 
 void p_BCLASSESA(Client *client) {
     string sql, classes = "BCLASSESA", login = client->login;
+
+    db_mutex.lock();
 
     try {
         connection c(CONNECTION_STRING);
@@ -132,6 +164,7 @@ void p_BCLASSESA(Client *client) {
 
         if (r.empty()) {
             send_message_to_client(*client, "BCLASSESA,NULL");
+            db_mutex.unlock();
             return;
         }
 
@@ -144,6 +177,8 @@ void p_BCLASSESA(Client *client) {
     } catch (const exception &e) {
         cerr << e.what() << endl;
     }
+
+    db_mutex.unlock();
 }
 
 void p_BCLASSESC(Client *client, std::string buffer) {
@@ -165,6 +200,8 @@ void p_BSPELLSR(Client *client) {
 void p_BSPELLSA(Client *client, string selectedClass) {
     string sql, spells = "BSPELLSA";
 
+    db_mutex.lock();
+
     try {
         connection c(CONNECTION_STRING);
         if (!c.is_open())
@@ -176,6 +213,7 @@ void p_BSPELLSA(Client *client, string selectedClass) {
 
         if (r.empty()) {
             send_message_to_client(client, "BSPELLSA,NULL");
+            db_mutex.unlock();
             return;
         }
 
@@ -189,6 +227,8 @@ void p_BSPELLSA(Client *client, string selectedClass) {
     } catch (const exception &e) {
         cerr << e.what() << endl;
     }
+
+    db_mutex.unlock();
 }
 
 void p_BSPELLSC(Client *client, string chosenList) {
@@ -240,6 +280,11 @@ void p_BMATCH(Client p1, Client p2) {
                                p2.combatInfos.toString() + ";" + p2.selectedClass + ";" + p2.login);
     send_message_to_client(p2, "BMATCH," + p2.combatInfos.toString() + ";" + p2.selectedClass + ";" + p2.login + "," +
                                p1.combatInfos.toString() + ";" + p1.selectedClass + ";" + p1.login);
+
+    stats_mutex.lock();
+    qStats.playedGames++;
+    qStats.currentGames++;
+    stats_mutex.unlock();
 }
 
 void p_BFIGHT(Client client, string buffer) {
@@ -300,6 +345,9 @@ void p_BREF(Client p1, Client p2) {
 void p_BWIN(Client *client) {
     //send_message_to_client(*client, "BWIN," + ++(client->elo));
     send_message_to_client(*client, "BWIN");
+    stats_mutex.lock();
+    qStats.currentGames--;
+    stats_mutex.unlock();
 }   // TODO Lorsque l'elo sera fait, décommenter la ligne
 
 void p_BLOSE(Client *client) {
@@ -363,6 +411,8 @@ void p_BNAME(Client *client, string buffer) {
 
     string sql, name = buf[1];
 
+    db_mutex.lock();
+
     try {
         connection c(CONNECTION_STRING);
         if (!c.is_open())
@@ -374,33 +424,15 @@ void p_BNAME(Client *client, string buffer) {
 
     } catch (const exception &e) {
         cerr << e.what() << endl;
+        db_mutex.unlock();
         return;
     }
 
     p_BNAMEACK(*client);
+
+    db_mutex.unlock();
 }
 
 void p_BNAMEACK(Client client) {
     send_message_to_client(client, "BNAMEACK");
-}
-
-void client_disconnected(Client *clients, int k, int *actual) {
-    MMStruct *ms = &mmVector[clients[k].mmIndex];
-
-    if (clients[k].isInMatchMaking()) {
-        if (ms->c1 != nullptr && ms->c2 != nullptr) {   // Si le combat est en cours
-            if (ms->c1->sock == clients[k].sock)        // On fait perdre le client qui s'est déconnecté
-                p_BWIN(ms->c2);
-            else
-                p_BWIN(ms->c1);
-        } else if (ms->c1->sock == clients[k].sock)   // Si le client est en file d'attente, on l'enlève du matchmaking
-            p_BUNMAKE(&clients[k]);
-    }
-    closesocket(clients[k].sock);
-    remove_client(clients, k, actual);
-}
-
-void qclient_disconnected(QClient *clients, int k, int *actual) {
-    closesocket(clients[k].sock);
-    remove_qclient(clients, k, actual);
 }
