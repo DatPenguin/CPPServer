@@ -8,11 +8,11 @@
 using namespace std;
 
 Client::Client(int socket) {
-    sock = socket;
+	sock = socket;
 }
 
 bool Client::isInMatchMaking() {
-    return mmIndex != -1;
+	return mmIndex != -1;
 }
 
 Client::Client() = default;

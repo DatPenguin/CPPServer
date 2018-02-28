@@ -3,7 +3,7 @@
 using namespace std;
 
 QClient::QClient(int socket) {
-    sock = socket;
+	sock = socket;
 }
 
 QClient::QClient() = default;

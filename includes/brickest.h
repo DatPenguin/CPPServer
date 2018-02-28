@@ -7,9 +7,9 @@
 #include "Client.h"
 
 typedef struct {
-    Client *c1;
-    Client *c2;
-    int index;
+	Client *c1;
+	Client *c2;
+	int index;
 } MMStruct;
 
 #endif //CPPSERVER_BRICKEST_H

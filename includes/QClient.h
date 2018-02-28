@@ -5,11 +5,11 @@
 
 class QClient {
 public:
-    explicit QClient(int socket);
+	explicit QClient(int socket);
 
-    explicit QClient();
+	explicit QClient();
 
-    int sock;
+	int sock;
 };
 
 

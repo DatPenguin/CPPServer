@@ -13,21 +13,21 @@
 
 class Client {
 public:
-    explicit Client(int socket);
+	explicit Client(int socket);
 
-    explicit Client();
+	explicit Client();
 
-    bool isInMatchMaking();
+	bool isInMatchMaking();
 
-    int sock;
-    int mmIndex = -1;
-    std::string login;
-    std::vector<std::string> heroList;
-    std::string selectedClass;
-    Fighter combatInfos;
-    std::vector<Spell> spellsList;
-    std::vector<Spell> selectedSpells;
-    bool is_auth = false;
+	int sock;
+	int mmIndex = -1;
+	std::string login;
+	std::vector<std::string> heroList;
+	std::string selectedClass;
+	Fighter combatInfos;
+	std::vector<Spell> spellsList;
+	std::vector<Spell> selectedSpells;
+	bool is_auth = false;
 };
 
 #endif //CPPSERVER_PLAYER_H

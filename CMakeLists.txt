@@ -4,7 +4,7 @@ project(CPPServer)
 set(CMAKE_CXX_STANDARD 14)
 
 set(HEADER_FILES includes/engine.h
-        includes/brickest.h src/QClient.cpp includes/QClient.h src/Stats.cpp includes/Stats.h src/engine.cpp)
+        includes/brickest.h src/QClient.cpp includes/QClient.h src/Stats.cpp includes/Stats.h src/engine.cpp src/query.cpp includes/query.h)
 
 set(SOURCE_FILES src/main.cpp
         src/clientio.cpp
@@ -17,7 +17,7 @@ set(SOURCE_FILES src/main.cpp
         src/Fighter.cpp
         includes/Fighter.h
         src/Client.cpp
-        includes/Client.h src/QClient.cpp includes/QClient.h src/Stats.cpp includes/Stats.h src/engine.cpp)
+        includes/Client.h src/QClient.cpp includes/QClient.h src/Stats.cpp includes/Stats.h src/engine.cpp src/query.cpp includes/query.h)
 
 find_package(Threads)
 
